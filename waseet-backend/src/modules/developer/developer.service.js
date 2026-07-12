@@ -5,11 +5,7 @@ import { prisma } from '../../lib/prisma.js'
 import { s3, buckets } from '../../lib/s3.js'
 import { getSection } from '../../lib/settings.js'
 import { ApiError } from '../../middleware/error.js'
-
-const imageUrl = async (key) => {
-  if (!key) return null
-  try { return await getSignedUrl(s3, new GetObjectCommand({ Bucket: buckets.public, Key: key }), { expiresIn: 3600 }) } catch { return null }
-}
+import { imageUrl } from '../../lib/projectMedia.js'
 
 // ---- projects ----------------------------------------------------------------
 // resolve any media keys inside the details blob into signed URLs for the client

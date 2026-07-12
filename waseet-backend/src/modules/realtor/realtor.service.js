@@ -3,17 +3,7 @@ import { s3, buckets } from '../../lib/s3.js'
 import { GetObjectCommand } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import { ApiError } from '../../middleware/error.js'
-import { resolveProjectMedia } from '../../lib/projectMedia.js'
-
-// ---- image URL helper (project images live in the public bucket) --------------
-async function imageUrl(key) {
-  if (!key) return null
-  try {
-    return await getSignedUrl(s3, new GetObjectCommand({ Bucket: buckets.public, Key: key }), { expiresIn: 3600 })
-  } catch {
-    return null
-  }
-}
+import { resolveProjectMedia, imageUrl } from '../../lib/projectMedia.js'
 
 const projectView = async (p, savedIds) => ({
   id: p.id,
