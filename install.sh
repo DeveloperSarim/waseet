@@ -88,7 +88,8 @@ done
 step "Generating secrets + .env…"
 PG_PASS=$(rand); REDIS_PASS=$(rand); S3_KEY=$(rand); S3_SECRET=$(rand)
 JWT_A=$(rand)$(rand); JWT_R=$(rand)$(rand); ENC_KEY=$(openssl rand -base64 32)
-if [ -n "$DOMAIN" ]; then PUBLIC_URL="https://$DOMAIN"; else PUBLIC_URL="http://localhost:$APP_PORT"; fi
+# with a domain we serve HTTPS (secure cookies); without one it's plain HTTP by IP:port
+if [ -n "$DOMAIN" ]; then PUBLIC_URL="https://$DOMAIN"; COOKIE_SECURE=true; else PUBLIC_URL="http://localhost:$APP_PORT"; COOKIE_SECURE=false; fi
 
 cat > .env <<EOF
 NODE_ENV=production
@@ -96,6 +97,7 @@ PORT=19000
 APP_PORT=$APP_PORT
 APP_URL=$PUBLIC_URL
 CORS_ORIGIN=$PUBLIC_URL
+COOKIE_SECURE=$COOKIE_SECURE
 
 ADMIN_EMAIL=$ADMIN_EMAIL
 ADMIN_PASSWORD=$ADMIN_PASSWORD

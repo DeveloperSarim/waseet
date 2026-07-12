@@ -32,6 +32,10 @@ const schema = z.object({
   ENCRYPTION_KEY: z.string().min(1),
   CORS_ORIGIN: z.string().default('http://localhost:5173'),
   APP_URL: z.string().default('http://localhost:5173'),
+  // Force the refresh cookie's Secure flag. Unset → true in production, false in dev.
+  // Set COOKIE_SECURE=false when serving over plain HTTP (e.g. accessing by IP:port
+  // without SSL) so the session cookie is stored/sent by the browser.
+  COOKIE_SECURE: z.preprocess((v) => (v == null || v === '' ? undefined : String(v).trim().toLowerCase() === 'true'), z.boolean().optional()),
 
   SMTP_HOST: z.string().optional().default(''),
   SMTP_PORT: z.coerce.number().default(587),

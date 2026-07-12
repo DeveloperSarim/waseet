@@ -3,9 +3,13 @@ import { config } from '../../config/env.js'
 import { parseDuration } from '../../utils/duration.js'
 
 const COOKIE = 'waseet_rt'
+// Secure flag: honour COOKIE_SECURE if set, else default to production-only.
+// Must be false when the site is served over plain HTTP (IP:port without SSL),
+// otherwise the browser drops the refresh cookie and sessions won't persist.
+const cookieSecure = config.COOKIE_SECURE ?? config.NODE_ENV === 'production'
 const cookieOptions = () => ({
   httpOnly: true,
-  secure: config.NODE_ENV === 'production',
+  secure: cookieSecure,
   sameSite: 'lax',
   path: '/api/v1/auth',
   maxAge: parseDuration(config.JWT_REFRESH_TTL),
