@@ -15,10 +15,10 @@ PROJECT="waseet"
 COMPOSE="docker compose"
 mkdir -p "$BACKUP_DIR"
 
-# load DB creds from .env
-if [ -f .env ]; then set -a; . ./.env; set +a; fi
-PGUSER="${POSTGRES_USER:-waseet}"
-PGDB="${POSTGRES_DB:-waseet}"
+# read specific keys from .env WITHOUT sourcing it (values may contain spaces / < > etc.)
+env_get() { grep -E "^$1=" .env 2>/dev/null | head -1 | cut -d= -f2- | sed -e 's/^"//' -e 's/"$//'; }
+PGUSER="$(env_get POSTGRES_USER)"; PGUSER="${PGUSER:-waseet}"
+PGDB="$(env_get POSTGRES_DB)"; PGDB="${PGDB:-waseet}"
 
 c_green() { printf '\033[0;32m%s\033[0m\n' "$1"; }
 c_red()   { printf '\033[0;31m%s\033[0m\n' "$1"; }

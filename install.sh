@@ -129,7 +129,7 @@ SMTP_PORT=587
 SMTP_SECURE=false
 SMTP_USER=
 SMTP_PASS=
-SMTP_FROM=Waseet <no-reply@${DOMAIN:-localhost}>
+SMTP_FROM="Waseet <no-reply@${DOMAIN:-localhost}>"
 EOF
 chmod 600 .env
 ok ".env written (secrets auto-generated)"
