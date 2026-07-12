@@ -4,6 +4,7 @@ import { colors } from '../../theme/tokens'
 import { useHover } from '../../hooks/useHover'
 import { useAuth } from '../../context/AuthContext'
 import { initials as toInitials } from '../../lib/adminFormat'
+import { useDrawer } from './DrawerContext'
 
 function NavIcon({ d, color }) {
   return (
@@ -13,7 +14,7 @@ function NavIcon({ d, color }) {
   )
 }
 
-function NavItem({ item, active, dark }) {
+function NavItem({ item, active, dark, onNav }) {
   const [hovered, hoverProps] = useHover()
 
   const itemStyle = dark
@@ -46,6 +47,7 @@ function NavItem({ item, active, dark }) {
     <Link
       {...hoverProps}
       to={item.to}
+      onClick={onNav}
       style={{
         position: 'relative',
         display: 'flex',
@@ -86,6 +88,8 @@ export function Sidebar({ config, className }) {
   const location = useLocation()
   const navigate = useNavigate()
   const { user, logout } = useAuth() || {}
+  const drawer = useDrawer()
+  const closeDrawer = () => drawer?.setOpen(false)
   const dark = config.theme === 'dark'
   const border = dark ? '1px solid rgba(255,255,255,0.08)' : `1px solid ${colors.border}`
 
@@ -131,7 +135,7 @@ export function Sidebar({ config, className }) {
           alignItems: 'center',
         }}
       >
-        <Link to={config.base} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+        <Link to={config.base} onClick={closeDrawer} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
           <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={dark ? '#fff' : colors.ink} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
             <path d="M12 22s6-5.5 6-11a6 6 0 1 0-12 0c0 5.5 6 11 6 11z" />
             <circle cx="12" cy="11" r="2.4" />
@@ -176,7 +180,7 @@ export function Sidebar({ config, className }) {
               {group.label}
             </div>
             {group.items.map((item) => (
-              <NavItem key={item.to} item={item} active={item.to === activeTo} dark={dark} />
+              <NavItem key={item.to} item={item} active={item.to === activeTo} dark={dark} onNav={closeDrawer} />
             ))}
           </div>
         ))}

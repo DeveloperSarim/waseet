@@ -211,11 +211,54 @@ select:focus {
   }
 }
 
-/* Portal sidebar collapses on narrow screens (matches source .rd-side rule) */
+/* Portal sidebar → slide-in drawer on mobile (hamburger lives in the Topbar) */
+.wa-hamburger {
+  display: none;
+}
+.wa-drawer-backdrop {
+  display: none;
+}
+
 @media (max-width: 760px) {
-  .wa-sidebar {
-    display: none !important;
+  .wa-hamburger {
+    display: inline-flex !important;
   }
+  .wa-sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1200;
+    transform: translateX(-100%);
+    transition: transform 0.25s ease;
+    box-shadow: 12px 0 48px rgba(0, 0, 0, 0.25);
+  }
+  .wa-sidebar.wa-open {
+    transform: translateX(0);
+  }
+  .wa-drawer-backdrop.wa-open {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 1100;
+    background: rgba(0, 0, 0, 0.45);
+    animation: pd-fade-in 0.2s ease;
+  }
+  /* tighter top bar on phones so the title + actions fit */
+  .wa-topbar {
+    padding-left: 14px !important;
+    padding-right: 14px !important;
+    gap: 8px !important;
+  }
+  /* tighter content padding on phones */
+  .wa-portal-main {
+    padding: 16px 14px !important;
+  }
+}
+
+/* Wide tables/cards inside a portal page scroll horizontally instead of breaking */
+.wa-scroll-x {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* Nav items that hide on small screens (matches source .wst-hide-sm) */
