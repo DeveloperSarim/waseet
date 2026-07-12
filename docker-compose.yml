@@ -74,6 +74,7 @@ services:
     restart: unless-stopped
     depends_on:
       - backend
+      - rustfs
     ports:
       # BIND_ADDR is 127.0.0.1 when a domain+reverse-proxy is used (secure default),
       # or 0.0.0.0 when the app is served directly on IP:port (set by install.sh).

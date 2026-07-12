@@ -3,10 +3,19 @@ import { GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import crypto from 'node:crypto'
 import { ApiError } from '../middleware/error.js'
+import { config } from '../config/env.js'
 
-// Short-lived signed URL for an object in the public project-media bucket.
+// Browser-reachable URL for an object in the PUBLIC bucket (project images, logos,
+// brochures, floor plans…). In production the S3 endpoint (`rustfs:9000`) is only
+// reachable inside the docker network, so we build a same-origin URL that nginx
+// proxies to storage (`STORAGE_PUBLIC_BASE=/storage`). The public bucket is
+// anonymous-read, so no signature is needed. In dev (no STORAGE_PUBLIC_BASE) we
+// fall back to a short-lived signed URL against the directly-reachable endpoint.
 export async function imageUrl(key) {
   if (!key) return null
+  if (config.STORAGE_PUBLIC_BASE) {
+    return `${config.STORAGE_PUBLIC_BASE.replace(/\/$/, '')}/${buckets.public}/${key}`
+  }
   try {
     return await getSignedUrl(s3, new GetObjectCommand({ Bucket: buckets.public, Key: key }), { expiresIn: 3600 })
   } catch {

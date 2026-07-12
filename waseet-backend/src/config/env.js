@@ -32,6 +32,9 @@ const schema = z.object({
   ENCRYPTION_KEY: z.string().min(1),
   CORS_ORIGIN: z.string().default('http://localhost:5173'),
   APP_URL: z.string().default('http://localhost:5173'),
+  // Browser-reachable base for PUBLIC bucket objects (nginx proxies this to storage).
+  // Production: "/storage". Empty in dev → fall back to signed URLs.
+  STORAGE_PUBLIC_BASE: z.string().optional().default(''),
   // Force the refresh cookie's Secure flag. Unset → true in production, false in dev.
   // Set COOKIE_SECURE=false when serving over plain HTTP (e.g. accessing by IP:port
   // without SSL) so the session cookie is stored/sent by the browser.
