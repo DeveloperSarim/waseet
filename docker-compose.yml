@@ -1,0 +1,84 @@
+# ─────────────────────────────────────────────────────────────────────────────
+#  Waseet — production stack (single project, one container per service)
+#  Services: postgres · redis · rustfs (storage) · backend (API) · frontend (web)
+#  Only the frontend is published to the host (127.0.0.1:${APP_PORT}); the host
+#  reverse-proxy (configured by install.sh) terminates SSL and forwards the domain.
+#  DB / Redis / storage stay on the internal docker network — never exposed.
+# ─────────────────────────────────────────────────────────────────────────────
+name: waseet
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: waseet-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: waseet-redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--requirepass", "${REDIS_PASSWORD}"]
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  rustfs:
+    image: rustfs/rustfs:latest
+    container_name: waseet-rustfs
+    restart: unless-stopped
+    environment:
+      RUSTFS_VOLUMES: /data
+      RUSTFS_ADDRESS: ":9000"
+      RUSTFS_CONSOLE_ENABLE: "false"
+      RUSTFS_ACCESS_KEY: ${S3_ACCESS_KEY}
+      RUSTFS_SECRET_KEY: ${S3_SECRET_KEY}
+    volumes:
+      - rustfsdata:/data
+
+  backend:
+    build: ./waseet-backend
+    container_name: waseet-backend
+    restart: unless-stopped
+    env_file: .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      rustfs:
+        condition: service_started
+    expose:
+      - "19000"
+
+  frontend:
+    build:
+      context: ./waseet-react
+      args:
+        VITE_API_URL: /api/v1
+    container_name: waseet-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      # published only on the loopback; the host reverse-proxy forwards the domain here
+      - "127.0.0.1:${APP_PORT}:80"
+
+volumes:
+  pgdata:
+  redisdata:
+  rustfsdata:

@@ -1,0 +1,249 @@
+/* Global reset + shared primitives, mirroring the <helmet> blocks in the source pages. */
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  color: #0a0a0a;
+  background: #fafafa;
+  -webkit-font-smoothing: antialiased;
+  letter-spacing: -0.01em;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button {
+  font-family: inherit;
+}
+
+input,
+textarea,
+select {
+  font-family: inherit;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+}
+
+/* Custom scrollbar (matches source dashboards) */
+::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 99px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Green focus ring for form pages (matches registration source) */
+.wa-form input:focus,
+.wa-form select:focus,
+.wa-form textarea:focus {
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.1);
+  border-color: #16a34a !important;
+}
+
+/* Spinner keyframe used by loading buttons across the app */
+@keyframes pd-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Status / maintenance / password page animations (mirror source helmets) */
+@keyframes ws-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes ws-spin-rev {
+  to {
+    transform: rotate(-360deg);
+  }
+}
+@keyframes ws-pulse {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.7);
+    opacity: 0.35;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+@keyframes wsk-pop {
+  0% {
+    transform: scale(0);
+  }
+  70% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+@keyframes wsk-toast {
+  from {
+    transform: translateY(16px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+@keyframes pd-pop {
+  from {
+    transform: scale(0);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+@keyframes pd-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Landing page animations (from the source helmet) */
+@keyframes ps-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+@keyframes wfloat {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+@keyframes wmarquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+.wa-marquee:hover .wa-marquee-track {
+  animation-play-state: paused;
+}
+
+/* Landing responsive tweaks (mirror source .wst-* rules) */
+@media (max-width: 900px) {
+  .wa-h1 {
+    font-size: 34px !important;
+  }
+  .wa-hero-cards {
+    transform: scale(0.82);
+  }
+  .wa-deco {
+    display: none !important;
+  }
+}
+
+/* Sticky-scroll "How Waseet works" degrades to a static stack on small screens */
+@media (max-width: 820px) {
+  .wa-hiw {
+    height: auto !important;
+  }
+  .wa-sticky {
+    position: static !important;
+    height: auto !important;
+    min-height: 0 !important;
+    padding: 48px 0;
+  }
+  .wa-hiw-fade {
+    position: relative !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    margin-bottom: 16px;
+  }
+  .wa-device {
+    display: none !important;
+  }
+}
+@media (max-width: 640px) {
+  .wa-h1 {
+    font-size: 28px !important;
+  }
+  .wa-hero-cards {
+    display: none !important;
+  }
+}
+
+/* Portal sidebar collapses on narrow screens (matches source .rd-side rule) */
+@media (max-width: 760px) {
+  .wa-sidebar {
+    display: none !important;
+  }
+}
+
+/* Nav items that hide on small screens (matches source .wst-hide-sm) */
+@media (max-width: 640px) {
+  .wa-hide-sm {
+    display: none !important;
+  }
+}
+
+/* Project-detail two-column stacks on small screens */
+@media (max-width: 900px) {
+  .pd-cols {
+    flex-direction: column !important;
+  }
+  .pd-right {
+    position: static !important;
+    width: 100%;
+  }
+}
+
+/* Horizontal tab strips scroll rather than wrap */
+.pd-tabs::-webkit-scrollbar {
+  height: 0;
+}
+
+/* Profile two-column stacks on small screens */
+@media (max-width: 860px) {
+  .rp-cols {
+    flex-direction: column !important;
+  }
+}

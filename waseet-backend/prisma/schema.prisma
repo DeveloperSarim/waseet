@@ -1,0 +1,423 @@
+// Waseet — Prisma schema
+// Foundation: users, auth (refresh tokens), audit log.
+// Domain models (projects, leads, commissions, disputes, ...) agle steps me add honge.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  REALTOR
+  DEVELOPER
+  ADMIN
+}
+
+enum UserStatus {
+  PENDING // registered, awaiting admin review
+  ACTIVE
+  SUSPENDED
+  REJECTED
+}
+
+model User {
+  id           String     @id @default(uuid()) @db.Uuid
+  role         UserRole
+  status       UserStatus @default(PENDING)
+  email        String     @unique
+  passwordHash String
+  fullName     String
+  phone        String?
+  country      String? // SA | AE | PK
+  city         String?
+  // developer-specific optional profile fields (null for realtors)
+  companyName  String?
+  contactName  String?
+  website      String?
+  bio          String?
+  avatarKey    String? // object key in the public bucket for the profile photo
+  // realtor-specific profile fields
+  agency         String?
+  specialization String?
+  languages      String?
+  experience     String?
+  licenseType    String?
+  licenseNumber  String?
+  licenseExpiry  String?
+  idType         String?
+  idNumber       String?
+  // payout bank details (display-masked on the client)
+  bankName    String?
+  iban        String?
+  bankCountry String?
+  notificationPrefs Json  @default("{}") // { emailLeads, emailCommissions, emailAnnouncements, ... }
+  emailVerified Boolean   @default(false)
+  mustChangePassword Boolean @default(false) // true after admin issues a temp password
+  lastLoginAt  DateTime?
+  bannedUntil  DateTime? // set when an admin bans the account (null = permanent ban / not banned)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  refreshTokens  RefreshToken[]
+  auditLogs      AuditLog[]
+  documents      Document[]
+  passwordResets PasswordReset[]
+  projects       Project[]      @relation("DeveloperProjects")
+  savedProjects  SavedProject[]
+  leads          Lead[]         @relation("RealtorLeads")
+  developerLeads Lead[]         @relation("DeveloperLeads")
+  commissions    Commission[]   @relation("RealtorCommissions")
+  developerCommissions Commission[] @relation("DeveloperCommissions")
+  notifications  Notification[]
+  withdrawals    Withdrawal[]
+
+  @@index([role, status])
+  @@map("users")
+}
+
+enum ProjectStatus {
+  LIVE
+  PENDING
+  DRAFT
+  SOLD_OUT
+}
+
+model Project {
+  id            String        @id @default(uuid()) @db.Uuid
+  developerId   String        @db.Uuid
+  title         String
+  developerName String // denormalized for quick display
+  city          String?
+  country       String? // SA | AE | PK
+  type          String? // Apartment | Villa | Office | ...
+  bedrooms      String?
+  priceFrom     Int?
+  priceTo       Int?
+  commissionPct Float         @default(3)
+  status        ProjectStatus @default(LIVE)
+  imageKey      String? // primary cover image key (public bucket)
+  location      String?
+  mapLink       String?
+  description   String?
+  // map / geo
+  latitude      Float?
+  longitude     Float?
+  address       String?
+  // rich brochure content (units, amenities, gallery images[], masterPlanKey, brochureKey, handover, floors, ...)
+  details       Json?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  developer User           @relation("DeveloperProjects", fields: [developerId], references: [id], onDelete: Cascade)
+  savedBy   SavedProject[]
+  leads     Lead[]
+
+  @@index([status])
+  @@index([developerId])
+  @@map("projects")
+}
+
+model SavedProject {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  projectId String   @db.Uuid
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, projectId])
+  @@index([userId])
+  @@map("saved_projects")
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  VIEWING
+  NEGOTIATING
+  CLOSED
+  LOST
+}
+
+model Lead {
+  id          String     @id @default(uuid()) @db.Uuid
+  realtorId   String     @db.Uuid
+  developerId String?    @db.Uuid
+  projectId   String?    @db.Uuid
+  projectName String
+  developerName String?
+  realtorName String?
+  unit        String?
+  clientName  String
+  clientPhone String?
+  clientEmail String?
+  budget      String?
+  status      LeadStatus @default(NEW)
+  notes       String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  realtor   User        @relation("RealtorLeads", fields: [realtorId], references: [id], onDelete: Cascade)
+  developer User?       @relation("DeveloperLeads", fields: [developerId], references: [id], onDelete: SetNull)
+  project   Project?    @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  commission Commission?
+
+  @@index([realtorId, status])
+  @@index([developerId, status])
+  @@map("leads")
+}
+
+enum CommissionStatus {
+  PENDING // waiting for developer payment
+  PROCESSING // paid by developer, Waseet verifying / transferring
+  PAID
+  FAILED // payout to realtor's bank failed
+}
+
+model Commission {
+  id            String           @id @default(uuid()) @db.Uuid
+  realtorId     String           @db.Uuid
+  developerId   String?          @db.Uuid
+  leadId        String?          @unique @db.Uuid
+  projectId     String?          @db.Uuid
+  dealRef       String // e.g. WS-2026-042
+  projectName   String
+  developerName String?
+  realtorName   String?
+  unit          String?
+  closedAt      DateTime?
+  gross         Int
+  platformPct   Float            @default(15)
+  net           Int
+  status        CommissionStatus @default(PENDING)
+  failureReason String?
+  paidByDevAt   DateTime?
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  realtor   User  @relation("RealtorCommissions", fields: [realtorId], references: [id], onDelete: Cascade)
+  developer User? @relation("DeveloperCommissions", fields: [developerId], references: [id], onDelete: SetNull)
+  lead      Lead? @relation(fields: [leadId], references: [id], onDelete: SetNull)
+
+  @@index([developerId, status])
+
+  @@index([realtorId, status])
+  @@map("commissions")
+}
+
+enum WithdrawalStatus {
+  REQUESTED // realtor asked to withdraw available (developer-paid) funds
+  PROCESSING // platform is sending the payout
+  PAID // funds settled to the realtor's bank
+  REJECTED
+}
+
+model Withdrawal {
+  id        String           @id @default(uuid()) @db.Uuid
+  realtorId String           @db.Uuid
+  amount    Int
+  method    String? // bank | wallet | ...
+  status    WithdrawalStatus @default(REQUESTED)
+  note      String?
+  reference String? // e.g. WD-2026-001
+  paidAt    DateTime?
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  realtor User @relation(fields: [realtorId], references: [id], onDelete: Cascade)
+
+  @@index([realtorId, status])
+  @@map("withdrawals")
+}
+
+model Notification {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  type      String // lead | commission | badge | announcement | security
+  title     String
+  body      String?
+  link      String?
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, read])
+  @@map("notifications")
+}
+
+enum DocumentType {
+  PROFILE_PHOTO
+  FAL_LICENSE // realtor license (KSA)
+  NATIONAL_ID // Iqama / national ID
+  TRADE_LICENSE // developer CR
+  REGA_CERTIFICATE
+  OTHER
+}
+
+enum DocumentStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+model Document {
+  id        String         @id @default(uuid()) @db.Uuid
+  userId    String         @db.Uuid
+  type      DocumentType
+  status    DocumentStatus @default(PENDING)
+  bucket    String
+  key       String // object key in the (private) bucket
+  filename  String
+  mimeType  String
+  size      Int
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("documents")
+}
+
+model PasswordReset {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @db.Uuid
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("password_resets")
+}
+
+model RefreshToken {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @db.Uuid
+  tokenHash String    @unique
+  userAgent String?
+  ip        String?
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("refresh_tokens")
+}
+
+enum DisputeStatus {
+  OPEN
+  UNDER_REVIEW
+  RESOLVED
+  REJECTED
+}
+
+model Dispute {
+  id            String        @id @default(uuid()) @db.Uuid
+  ref           String // e.g. DSP-2026-001
+  raisedById    String?       @db.Uuid // realtor or developer who raised it
+  raisedByName  String?
+  raisedByRole  String?
+  commissionId  String?       @db.Uuid
+  leadId        String?       @db.Uuid
+  subject       String
+  description   String?
+  amount        Int?
+  status        DisputeStatus @default(OPEN)
+  resolution    String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@index([status])
+  @@map("disputes")
+}
+
+model Announcement {
+  id         String   @id @default(uuid()) @db.Uuid
+  title      String
+  body       String
+  audience   String   @default("ALL") // ALL | REALTORS | DEVELOPERS
+  sentById   String?  @db.Uuid
+  recipients Int      @default(0)
+  createdAt  DateTime @default(now())
+
+  @@map("announcements")
+}
+
+// Platform-wide settings — one row per section (key), value is a JSON blob.
+model Setting {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt
+
+  @@map("settings")
+}
+
+// Backup metadata — the actual JSON dump lives on disk in the backups/ dir.
+model Backup {
+  id        String   @id @default(uuid()) @db.Uuid
+  filename  String
+  sizeBytes Int
+  counts    Json?
+  note      String?
+  createdAt DateTime @default(now())
+
+  @@map("backups")
+}
+
+// PDPL/ZATCA — who did what (7-year retention)
+model AuditLog {
+  id        String   @id @default(uuid()) @db.Uuid
+  actorId   String?  @db.Uuid
+  action    String // e.g. "lead.reveal_phone", "commission.verify"
+  entity    String? // e.g. "Lead"
+  entityId  String?
+  meta      Json?
+  ip        String?
+  createdAt DateTime @default(now())
+
+  actor User? @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([actorId])
+  @@index([entity, entityId])
+  @@map("audit_logs")
+}
+
+// ---- Saudi geography reference data (imported from an open dataset) ----------
+// Every Saudi city and its districts, used to power the marketplace city/area
+// search dropdowns. Reference data — read-only from the app's perspective.
+model SaCity {
+  id           Int          @id // city_id from the source dataset
+  regionId     Int
+  nameEn       String
+  nameAr       String
+  lat          Float?
+  lng          Float?
+  hasDistricts Boolean      @default(false)
+  districts    SaDistrict[]
+
+  @@index([nameEn])
+  @@map("sa_cities")
+}
+
+model SaDistrict {
+  id     Int    @id @default(autoincrement())
+  cityId Int
+  nameEn String
+  nameAr String
+
+  city SaCity @relation(fields: [cityId], references: [id], onDelete: Cascade)
+
+  @@index([cityId])
+  @@map("sa_districts")
+}

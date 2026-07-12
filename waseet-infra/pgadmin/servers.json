@@ -1,0 +1,14 @@
+{
+  "Servers": {
+    "1": {
+      "Name": "Waseet Postgres",
+      "Group": "Servers",
+      "Host": "postgres",
+      "Port": 5432,
+      "MaintenanceDB": "waseet",
+      "Username": "waseet",
+      "SSLMode": "prefer",
+      "Comment": "Waseet local development database"
+    }
+  }
+}

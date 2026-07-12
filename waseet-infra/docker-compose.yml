@@ -1,0 +1,81 @@
+name: waseet
+
+services:
+  # ---------------------------------------------------------
+  # PostgreSQL — main relational database
+  # ---------------------------------------------------------
+  postgres:
+    image: postgres:16-alpine
+    container_name: waseet-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      # 127.0.0.1 = sirf host se access (VPS pe public expose nahi hoga)
+      - "127.0.0.1:${POSTGRES_PORT}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ---------------------------------------------------------
+  # pgweb — simple, modern Postgres UI (tables + rows + query)
+  #   Auto-connects to the DB. Open http://localhost:${PGWEB_PORT}
+  # ---------------------------------------------------------
+  pgweb:
+    image: sosedoff/pgweb:latest
+    container_name: waseet-pgweb
+    restart: unless-stopped
+    environment:
+      PGWEB_DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable
+    ports:
+      - "127.0.0.1:${PGWEB_PORT}:8081"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # ---------------------------------------------------------
+  # RustFS — S3-compatible object storage (MinIO alternative)
+  #   Modern built-in console, Apache-2.0, Rust (fast). Built-in KMS.
+  #   API  : http://localhost:9000
+  #   Console UI: http://localhost:9001
+  # ---------------------------------------------------------
+  rustfs:
+    image: rustfs/rustfs:latest
+    container_name: waseet-rustfs
+    restart: unless-stopped
+    environment:
+      RUSTFS_VOLUMES: /data
+      RUSTFS_ADDRESS: ":9000"
+      RUSTFS_CONSOLE_ENABLE: "true"
+      RUSTFS_CONSOLE_ADDRESS: ":9001"
+      RUSTFS_ACCESS_KEY: ${MINIO_ROOT_USER}
+      RUSTFS_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
+    ports:
+      - "127.0.0.1:${MINIO_API_PORT}:9000"
+      - "127.0.0.1:${MINIO_CONSOLE_PORT}:9001"
+    volumes:
+      - rustfsdata:/data
+
+  # ---------------------------------------------------------
+  # Redis — cache + background job queue
+  # ---------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: waseet-redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--requirepass", "${REDIS_PASSWORD}"]
+    ports:
+      - "127.0.0.1:${REDIS_PORT}:6379"
+    volumes:
+      - redisdata:/data
+
+volumes:
+  pgdata:
+  rustfsdata:
+  redisdata:
