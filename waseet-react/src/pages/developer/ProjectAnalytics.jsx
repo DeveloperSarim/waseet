@@ -42,14 +42,14 @@ export default function ProjectAnalytics() {
     <>
       <Topbar
         left={
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
             <span style={crumb} onClick={() => navigate('/developer/projects')}>My Projects</span>
             <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#D1D5DB" strokeWidth={2}><path d="M9 6l6 6-6 6" /></svg>
             <span style={{ fontSize: 13, color: colors.ink, fontWeight: 500 }}>Analytics</span>
           </div>
         }
         actions={
-          <div style={{ display: 'flex', gap: 8 }}>
+          <div className="wa-hide-sm" style={{ display: 'flex', gap: 8 }}>
             <span style={chip}><svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#374151" strokeWidth={1.8}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" /></svg>Export CSV</span>
           </div>
         }
@@ -65,7 +65,7 @@ export default function ProjectAnalytics() {
           {!loading && (
             <>
               {/* STAT CARDS */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 16 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12, marginBottom: 16 }}>
                 {statCards.map((c, i) => (
                   <div key={i} style={{ background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 12, padding: '14px 16px' }}>
                     <div style={{ width: 30, height: 30, borderRadius: 7, background: colors.greenTint, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 8 }}><svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth={1.8}><path d={c.icon} /></svg></div>
@@ -90,7 +90,8 @@ export default function ProjectAnalytics() {
               </div>
 
               {/* PER-PROJECT TABLE */}
-              <div style={{ background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 12, overflow: 'hidden' }}>
+              <div className="wa-scroll-x">
+              <div style={{ background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 12, overflow: 'hidden', minWidth: 480 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', padding: '14px 18px', borderBottom: `1px solid ${colors.border}` }}><span style={{ fontSize: 14, fontWeight: 600 }}>Performance by Project</span><span style={{ fontSize: 12, color: colors.textFaint }}>All projects</span></div>
                 <div style={{ background: colors.bg, borderBottom: `1px solid ${colors.border}`, padding: '8px 18px', display: 'flex', alignItems: 'center' }}><span style={{ flex: 2, fontSize: 10, fontWeight: 600, color: colors.textFaint, textTransform: 'uppercase' }}>Project</span><span style={{ flex: 1, textAlign: 'right', fontSize: 10, fontWeight: 600, color: colors.textFaint, textTransform: 'uppercase' }}>Leads</span><span style={{ flex: 1, textAlign: 'right', fontSize: 10, fontWeight: 600, color: colors.textFaint, textTransform: 'uppercase' }}>Deals</span><span style={{ flex: 1, textAlign: 'right', fontSize: 10, fontWeight: 600, color: colors.textFaint, textTransform: 'uppercase' }}>Conv.</span></div>
 
@@ -122,6 +123,7 @@ export default function ProjectAnalytics() {
                     <span style={{ flex: 1, textAlign: 'right', fontSize: 12, fontWeight: 700 }}>{pct(totals.conversion)}</span>
                   </div>
                 )}
+              </div>
               </div>
             </>
           )}

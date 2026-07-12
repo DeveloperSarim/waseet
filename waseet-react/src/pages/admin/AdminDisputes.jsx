@@ -82,8 +82,8 @@ export default function AdminDisputes() {
   return (
     <>
       <Topbar
-        left={<div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}><span style={{ fontSize: 16, fontWeight: 700, letterSpacing: '-0.02em' }}>Disputes</span><span style={{ fontSize: 13, color: colors.textFaint }}>{counts.all} total</span></div>}
-        actions={<button style={{ height: 34, padding: '0 14px', background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 7, fontSize: 12, color: colors.textMuted, fontFamily: 'inherit', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}><svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={1.8}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" /></svg>Export CSV</button>}
+        left={<div style={{ display: 'flex', alignItems: 'baseline', gap: 8, minWidth: 0, overflow: 'hidden', whiteSpace: 'nowrap' }}><span style={{ fontSize: 16, fontWeight: 700, letterSpacing: '-0.02em' }}>Disputes</span><span style={{ fontSize: 13, color: colors.textFaint }}>{counts.all} total</span></div>}
+        actions={<button className="wa-hide-sm" style={{ height: 34, padding: '0 14px', background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 7, fontSize: 12, color: colors.textMuted, fontFamily: 'inherit', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}><svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={1.8}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" /></svg>Export CSV</button>}
       />
 
       {/* Tabs */}
@@ -133,7 +133,8 @@ export default function AdminDisputes() {
             <span onClick={load} style={{ fontSize: 12, color: colors.red, fontWeight: 500, marginLeft: 'auto', cursor: 'pointer' }}>Retry</span>
           </div>
         )}
-        <div style={{ background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 12, overflow: 'hidden', margin: '16px 22px' }}>
+        <div className="wa-scroll-x" style={{ margin: '16px 22px' }}>
+        <div style={{ background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 12, overflow: 'hidden', minWidth: 820 }}>
           {/* Header */}
           <div style={{ background: colors.bg, borderBottom: `1px solid ${colors.border}`, padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
             <span style={{ flex: 0.7, ...head }}>Dispute</span>
@@ -178,17 +179,20 @@ export default function AdminDisputes() {
             </div>
           )}
         </div>
+        </div>
 
         {/* Summary */}
         <div style={{ background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 12, padding: '14px 16px', margin: '0 22px 16px' }}>
           <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 12 }}>Dispute summary</div>
-          <div style={{ display: 'flex' }}>
+          <div className="wa-scroll-x">
+          <div style={{ display: 'flex', minWidth: 560 }}>
             {summary.map(([value, color, label], i) => (
               <div key={label} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '8px 0', borderRight: i < summary.length - 1 ? `1px solid ${colors.surfaceMuted}` : 'none' }}>
                 <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 3, color }}>{value}</div>
                 <div style={{ fontSize: 10, color: colors.textFaint }}>{label}</div>
               </div>
             ))}
+          </div>
           </div>
         </div>
 

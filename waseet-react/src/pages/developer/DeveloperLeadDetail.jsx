@@ -18,7 +18,7 @@ const ENUM_TO_LABEL = { NEW: 'New', CONTACTED: 'Contacted', VIEWING: 'Site Visit
 const LABEL_TO_ENUM = { New: 'NEW', Contacted: 'CONTACTED', 'Site Visit': 'VIEWING', Negotiation: 'NEGOTIATING', Lost: 'LOST' }
 
 const modalShell = { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }
-const modalCard = { background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 12, padding: '18px 20px', maxWidth: 440, width: '100%', boxShadow: '0 10px 30px rgba(0,0,0,0.12)' }
+const modalCard = { background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 12, padding: '18px 20px', maxWidth: 440, width: '100%', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 10px 30px rgba(0,0,0,0.12)' }
 const btnGhost = { height: 34, padding: '0 16px', background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 7, fontSize: 12, color: colors.textMuted, fontFamily: 'inherit', cursor: 'pointer' }
 const inputStyle = { width: '100%', height: 34, border: `1px solid ${colors.border}`, borderRadius: 7, padding: '0 10px', fontSize: 13, fontFamily: 'inherit' }
 const modalFieldLabel = { fontSize: 12, fontWeight: 500, color: colors.textMuted, marginBottom: 4 }
@@ -189,15 +189,15 @@ export default function DeveloperLeadDetail() {
       )}
       <Topbar
         left={
-          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-            <span onClick={() => navigate('/developer/leads')} style={{ fontSize: 13, color: colors.textFaint, cursor: 'pointer' }}>All Leads</span>
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center', minWidth: 0 }}>
+            <span onClick={() => navigate('/developer/leads')} style={{ fontSize: 13, color: colors.textFaint, cursor: 'pointer', whiteSpace: 'nowrap' }}>All Leads</span>
             <Icon name="chevronRight" size={14} color={colors.borderStrong} strokeWidth={2} />
-            <span style={{ fontSize: 13, fontWeight: 500 }}>{lead.clientName} · {lead.projectName}</span>
+            <span style={{ fontSize: 13, fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{lead.clientName} · {lead.projectName}</span>
           </div>
         }
         actions={
           <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-            <div style={{ display: 'flex', gap: 4, background: colors.surfaceMuted, borderRadius: 8, padding: 3 }}>
+            <div className="wa-hide-sm" style={{ display: 'flex', gap: 4, background: colors.surfaceMuted, borderRadius: 8, padding: 3 }}>
               <span style={tabStyle(view === 'neg')}>Negotiation</span>
               <span style={tabStyle(view === 'closed')}>Closed</span>
               <span style={tabStyle(view === 'lost')}>Lost</span>

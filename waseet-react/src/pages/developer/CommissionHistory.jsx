@@ -129,20 +129,20 @@ export default function CommissionHistory() {
     <>
       <Topbar
         left={
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
             <span style={{ fontSize: 13, color: colors.textFaint, cursor: 'pointer' }} onClick={() => navigate('/developer/commissions')}>Commissions</span>
             <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#D1D5DB" strokeWidth={2}><path d="M9 6l6 6-6 6" /></svg>
             <span style={{ fontSize: 13, color: colors.ink, fontWeight: 500 }}>History</span>
           </div>
         }
         actions={
-          <button onClick={doExport} style={{ height: 34, padding: '0 14px', background: exportBg, border: `1px solid ${exportBorder}`, borderRadius: 7, fontSize: 12, color: exportColor, fontFamily: 'inherit', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}><svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={exportColor} strokeWidth={1.8}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" /></svg>{exportLabel}</button>
+          <button onClick={doExport} className="wa-hide-sm" style={{ height: 34, padding: '0 14px', background: exportBg, border: `1px solid ${exportBorder}`, borderRadius: 7, fontSize: 12, color: exportColor, fontFamily: 'inherit', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}><svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={exportColor} strokeWidth={1.8}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" /></svg>{exportLabel}</button>
         }
       />
 
       <div style={{ flex: 1, overflowY: 'auto', background: colors.bg }}>
         {/* SUMMARY CARDS */}
-        <div style={{ padding: '18px 22px 0', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
+        <div style={{ padding: '18px 22px 0', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12 }}>
           {summaryCards.map((c, i) => (
             <div key={i} style={{ background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 12, padding: '14px 16px' }}>
               <div style={{ width: 30, height: 30, borderRadius: 7, background: colors.greenTint, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 8 }}><svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth={1.8}><path d={c.icon} /></svg></div>
@@ -175,7 +175,8 @@ export default function CommissionHistory() {
         )}
 
         {/* TABLE */}
-        <div style={{ background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 12, overflow: 'hidden', margin: '16px 22px' }}>
+        <div className="wa-scroll-x" style={{ margin: '16px 22px' }}>
+        <div style={{ background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 12, overflow: 'hidden', minWidth: 880 }}>
           <div style={{ background: colors.bg, borderBottom: `1px solid ${colors.border}`, padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
             <span style={{ flex: 0.8, ...th }}>Deal</span>
             <span style={{ flex: 1.8, ...th }}>Project · Unit</span>
@@ -245,6 +246,7 @@ export default function CommissionHistory() {
             </div>
           )}
         </div>
+        </div>
 
         {/* PAGINATION */}
         {!loading && visible.length > 0 && (
@@ -260,7 +262,7 @@ export default function CommissionHistory() {
       {/* PAY CONFIRM MODAL */}
       {payTarget && (
         <div onClick={() => !paying && setPayTarget(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 60, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
-          <div onClick={(e) => e.stopPropagation()} style={{ background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 12, padding: '18px 20px', maxWidth: 420, width: '100%', boxShadow: '0 10px 30px rgba(0,0,0,0.12)' }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 12, padding: '18px 20px', maxWidth: 420, width: '100%', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 10px 30px rgba(0,0,0,0.12)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
               <span style={{ fontSize: 15, fontWeight: 700 }}>Pay commission</span>
               <span onClick={() => !paying && setPayTarget(null)} style={{ fontSize: 18, color: colors.textFaint, cursor: 'pointer' }}>×</span>
@@ -282,7 +284,7 @@ export default function CommissionHistory() {
       {/* REPORT ISSUE MODAL */}
       {issueTarget && (
         <div onClick={() => !savingIssue && setIssueTarget(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 60, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
-          <div onClick={(e) => e.stopPropagation()} style={{ background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 12, padding: '18px 20px', maxWidth: 420, width: '100%', boxShadow: '0 10px 30px rgba(0,0,0,0.12)' }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 12, padding: '18px 20px', maxWidth: 420, width: '100%', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 10px 30px rgba(0,0,0,0.12)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
               <span style={{ fontSize: 15, fontWeight: 700 }}>Report payment issue</span>
               <span onClick={() => !savingIssue && setIssueTarget(null)} style={{ fontSize: 18, color: colors.textFaint, cursor: 'pointer' }}>×</span>

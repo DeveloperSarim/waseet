@@ -294,7 +294,7 @@ export default function AdminProjectEdit() {
               <Field label="City"><input value={city} onChange={(e) => setCity(e.target.value)} style={inputStyle} /></Field>
               <Field label="Bedrooms"><input value={bedrooms} onChange={(e) => setBedrooms(e.target.value)} placeholder="e.g. 1, 2, 3 BR" style={inputStyle} /></Field>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 10 }}>
               <Field label="Price From (SAR)"><input value={priceFrom} onChange={(e) => setPriceFrom(e.target.value)} style={inputStyle} /></Field>
               <Field label="Price To (SAR)"><input value={priceTo} onChange={(e) => setPriceTo(e.target.value)} style={inputStyle} /></Field>
               <Field label="Commission %"><input value={commissionPct} onChange={(e) => setCommissionPct(e.target.value)} style={inputStyle} /></Field>

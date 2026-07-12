@@ -123,13 +123,13 @@ export default function AdminRealtors() {
     <>
       <Topbar
         left={
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, minWidth: 0, overflow: 'hidden', whiteSpace: 'nowrap' }}>
             <span style={{ fontSize: 16, fontWeight: 700, letterSpacing: '-0.02em' }}>Realtors</span>
             <span style={{ fontSize: 13, color: colors.textFaint }}>{data.length} total</span>
           </div>
         }
         actions={
-          <button style={{ height: 34, padding: '0 14px', background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 7, fontSize: 12, color: colors.textMuted, fontFamily: 'inherit', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
+          <button className="wa-hide-sm" style={{ height: 34, padding: '0 14px', background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 7, fontSize: 12, color: colors.textMuted, fontFamily: 'inherit', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
             <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={1.8}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" /></svg>Export CSV
           </button>
         }
@@ -184,7 +184,8 @@ export default function AdminRealtors() {
           </div>
         )}
 
-        <div style={{ background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 12, overflow: 'hidden', margin: '16px 22px' }}>
+        <div className="wa-scroll-x" style={{ margin: '16px 22px' }}>
+        <div style={{ background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 12, overflow: 'hidden', minWidth: 960 }}>
           {/* HEADER */}
           <div style={{ background: colors.bg, borderBottom: `1px solid ${colors.border}`, padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
             <CheckBox checked={allSelected} onClick={toggleAll} />
@@ -256,6 +257,7 @@ export default function AdminRealtors() {
             </div>
           )}
         </div>
+        </div>
 
         <div style={{ background: colors.bg, borderTop: `1px solid ${colors.border}`, padding: '14px 22px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span style={{ fontSize: 12, color: colors.textSoft }}>Showing {visible.length} of {data.length} realtors</span>
@@ -265,7 +267,7 @@ export default function AdminRealtors() {
       {/* BULK APPROVE MODAL */}
       {bulkApproveOpen && (
         <div onClick={closeModals} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
-          <div onClick={stop} style={{ background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 12, padding: '18px 20px', maxWidth: 440, width: '100%', boxShadow: '0 10px 30px rgba(0,0,0,0.12)' }}>
+          <div onClick={stop} style={{ background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 12, padding: '18px 20px', maxWidth: 440, width: '100%', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 10px 30px rgba(0,0,0,0.12)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
               <span style={{ fontSize: 14, fontWeight: 600 }}>Approve {selectedCount} realtors?</span>
               <span onClick={closeModals} style={{ fontSize: 18, color: colors.textFaint, cursor: 'pointer' }}>×</span>
@@ -291,7 +293,7 @@ export default function AdminRealtors() {
       {/* BULK REJECT MODAL */}
       {bulkRejectOpen && (
         <div onClick={closeModals} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
-          <div onClick={stop} style={{ background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 12, padding: '18px 20px', maxWidth: 440, width: '100%', boxShadow: '0 10px 30px rgba(0,0,0,0.12)' }}>
+          <div onClick={stop} style={{ background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 12, padding: '18px 20px', maxWidth: 440, width: '100%', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 10px 30px rgba(0,0,0,0.12)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
               <span style={{ fontSize: 14, fontWeight: 600 }}>Reject {selectedCount} realtors?</span>
               <span onClick={closeModals} style={{ fontSize: 18, color: colors.textFaint, cursor: 'pointer' }}>×</span>

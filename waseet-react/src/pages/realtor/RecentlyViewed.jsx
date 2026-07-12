@@ -111,21 +111,21 @@ export default function RecentlyViewed() {
 
       <Topbar
         left={
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-            <span style={{ fontSize: 16, fontWeight: 700, letterSpacing: '-0.02em' }}>Recently Viewed</span>
-            <span style={{ fontSize: 13, color: colors.textFaint }}>{totalVisible} projects</span>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, minWidth: 0 }}>
+            <span style={{ fontSize: 16, fontWeight: 700, letterSpacing: '-0.02em', whiteSpace: 'nowrap' }}>Recently Viewed</span>
+            <span style={{ fontSize: 13, color: colors.textFaint, whiteSpace: 'nowrap' }}>{totalVisible} projects</span>
           </div>
         }
         actions={
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <button className="rv-clear" onClick={() => setShowClear(true)} style={{ height: 34, padding: '0 14px', background: 'transparent', border: 'none', borderRadius: 8, fontSize: 12, color: colors.textFaint, fontFamily: 'inherit', cursor: 'pointer' }}>Clear history</button>
+            <button className="rv-clear wa-hide-sm" onClick={() => setShowClear(true)} style={{ height: 34, padding: '0 14px', background: 'transparent', border: 'none', borderRadius: 8, fontSize: 12, color: colors.textFaint, fontFamily: 'inherit', cursor: 'pointer' }}>Clear history</button>
             <button className="rv-browse" onClick={() => navigate('/realtor/browse')} style={{ height: 34, padding: '0 14px', background: colors.green, border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 600, color: '#fff', fontFamily: 'inherit', cursor: 'pointer' }}>Browse marketplace →</button>
           </div>
         }
       />
 
       {/* filter bar */}
-      <div style={{ background: '#fff', borderBottom: `1px solid ${colors.border}`, padding: '10px 22px', display: 'flex', gap: 8, alignItems: 'center' }}>
+      <div style={{ background: '#fff', borderBottom: `1px solid ${colors.border}`, padding: '10px 22px', display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
         <span style={{ fontSize: 12, color: colors.textMuted, marginRight: 4 }}>Time:</span>
         <div style={{ display: 'flex', gap: 6 }}>
           {timeDefs.map((t) => {
@@ -166,7 +166,7 @@ export default function RecentlyViewed() {
             {groups.map((g) => (
               <div key={g.label} style={{ marginBottom: 22 }}>
                 <div style={{ fontSize: 11, fontWeight: 600, color: colors.textFaint, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>{g.label}</div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, alignItems: 'stretch', gridAutoRows: '1fr' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 16, alignItems: 'stretch', gridAutoRows: '1fr' }}>
                   {g.cards.map((c) => {
                     const hasLead = !!c.leadStatus
                     return (
@@ -255,7 +255,7 @@ export default function RecentlyViewed() {
       {/* CLEAR MODAL */}
       {showClear && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 70, padding: 24 }}>
-          <div style={{ background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 12, padding: '18px 20px', maxWidth: 400, width: '100%', boxShadow: '0 10px 30px rgba(0,0,0,0.12)' }}>
+          <div style={{ background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 12, padding: '18px 20px', maxWidth: 400, width: '100%', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 10px 30px rgba(0,0,0,0.12)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
               <span style={{ fontSize: 14, fontWeight: 600, color: colors.ink }}>Clear viewing history?</span>
               <button onClick={() => setShowClear(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex' }}><svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={colors.textFaint} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg></button>

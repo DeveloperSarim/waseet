@@ -237,7 +237,7 @@ export default function AddProject() {
   if (submitted) {
     return (
       <>
-        <Topbar left={<span style={{ fontSize: 16, fontWeight: 700, letterSpacing: '-0.02em' }}>Add New Project</span>} />
+        <Topbar left={<span style={{ fontSize: 16, fontWeight: 700, letterSpacing: '-0.02em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Add New Project</span>} />
         <div style={{ flex: 1, overflowY: 'auto', background: colors.bg, display: 'flex', alignItems: 'flex-start', justifyContent: 'center' }}>
           <div style={{ maxWidth: 480, padding: '48px 24px', textAlign: 'center' }}>
             <svg width={52} height={52} viewBox="0 0 24 24" fill="none" stroke={colors.green} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" style={{ marginBottom: 16 }}><circle cx="12" cy="12" r="10" /><path d="M8 12l2.5 2.5L16 9" /></svg>
@@ -267,7 +267,7 @@ export default function AddProject() {
   return (
     <>
       <Topbar
-        left={<span style={{ fontSize: 16, fontWeight: 700, letterSpacing: '-0.02em' }}>Add New Project</span>}
+        left={<span style={{ fontSize: 16, fontWeight: 700, letterSpacing: '-0.02em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Add New Project</span>}
         actions={<span style={{ fontSize: 13, color: colors.textFaint }}>Step {step} of 5</span>}
       />
       <Stepper step={step} goTo={setStep} />
@@ -283,22 +283,22 @@ export default function AddProject() {
               <div style={card}>
                 <div style={cardLabel}>Basic Information</div>
                 <div style={{ marginBottom: 12 }}><Field label="Project Name *"><input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Palm Residence" style={inputStyle} /></Field></div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 10, marginBottom: 12 }}>
                   <Field label="Project Type *"><select value={ptype} onChange={(e) => setPtype(e.target.value)} style={selStyle}><option>Apartments</option><option>Villas</option><option>Offices</option><option>Townhouses</option><option>Mixed</option></select></Field>
                   <Field label="Development Status *"><select defaultValue="Under Construction" style={selStyle}><option>Under Construction</option><option>Ready</option><option>Off-plan</option></select></Field>
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 10, marginBottom: 12 }}>
                   <Field label="Expected Handover *"><input placeholder="Q4 2027" style={inputStyle} /></Field>
                   <Field label="Completion %"><input placeholder="68" style={inputStyle} /></Field>
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 10 }}>
                   <Field label="Total Floors"><input placeholder="12" style={inputStyle} /></Field>
                   <Field label="Total Units"><input placeholder="96" style={inputStyle} /></Field>
                 </div>
               </div>
               <div style={{ ...card, marginBottom: 0 }}>
                 <div style={cardLabel}>Location</div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 10, marginBottom: 12 }}>
                   <Field label="City *"><select value={city} onChange={(e) => setCity(e.target.value)} style={selStyle}><option>Jeddah</option><option>Riyadh</option><option>Dammam</option><option>Mecca</option><option>Dubai</option><option>Abu Dhabi</option></select></Field>
                   <Field label="Area / Neighborhood *"><input value={area} onChange={(e) => setArea(e.target.value)} placeholder="Al Rawdhah" style={inputStyle} /></Field>
                 </div>
@@ -318,7 +318,7 @@ export default function AddProject() {
                     <span style={{ fontSize: 13, fontWeight: 600 }}>Unit Type</span>
                     <span onClick={() => setUnits(units.filter((_, j) => j !== i))} style={{ fontSize: 12, color: colors.red, cursor: 'pointer', padding: '2px 6px', borderRadius: 4 }}>× Remove</span>
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 10, marginBottom: 12 }}>
                     <Field label="Type *"><select value={u.type} onChange={(e) => setUnit(i, 'type', e.target.value)} style={selStyle}><option value="">Select type…</option><option>Studio</option><option>1BR</option><option>2BR</option><option>3BR</option><option>4BR</option><option>Penthouse</option><option>Townhouse</option><option>Villa</option><option>Office</option></select></Field>
                     <Field label="Available Units *"><input value={u.count} onChange={(e) => setUnit(i, 'count', e.target.value)} placeholder="e.g. 8" style={inputStyle} /></Field>
                     <Field label="Size (m²)">
@@ -387,7 +387,7 @@ export default function AddProject() {
               <div style={card}>
                 <div style={cardLabel}>Nearby Landmarks</div>
                 {landmarks.map((m, i) => (
-                  <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 8, alignItems: 'center' }}>
+                  <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 8, alignItems: 'center', flexWrap: 'wrap' }}>
                     <select defaultValue={m.cat} style={{ ...selStyle, width: 130 }}><option>{m.cat}</option><option>School</option><option>Hospital</option><option>Mall</option><option>Mosque</option></select>
                     <input defaultValue={m.name} style={{ ...inputStyle, flex: 1 }} />
                     <input defaultValue={m.dist} style={{ ...inputStyle, width: 80 }} />
@@ -544,7 +544,7 @@ export default function AddProject() {
       </div>
 
       {/* Bottom nav */}
-      <div style={{ background: '#fff', borderTop: `1px solid ${colors.border}`, padding: '12px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div style={{ background: '#fff', borderTop: `1px solid ${colors.border}`, padding: '12px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
         {step > 1 ? (
           <button onClick={() => setStep(step - 1)} style={{ height: 34, padding: '0 14px', background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 8, fontSize: 13, color: colors.textMuted, fontFamily: 'inherit', cursor: 'pointer' }}>← Previous</button>
         ) : <span />}

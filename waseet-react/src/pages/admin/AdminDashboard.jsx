@@ -102,13 +102,13 @@ export default function AdminDashboard() {
     <>
       <Topbar
         left={
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, minWidth: 0, overflow: 'hidden', whiteSpace: 'nowrap' }}>
             <span style={{ fontSize: 16, fontWeight: 700, letterSpacing: '-0.02em' }}>Dashboard</span>
-            <span style={{ fontSize: 13, color: colors.textFaint }}>{today}</span>
+            <span className="wa-hide-sm" style={{ fontSize: 13, color: colors.textFaint }}>{today}</span>
           </div>
         }
         right={
-          <div style={{ position: 'relative', width: 260 }}>
+          <div className="wa-hide-sm" style={{ position: 'relative', width: 260 }}>
             <Icon name="search" size={14} color={colors.textFaint} strokeWidth={1.8} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)' }} />
             <input placeholder="Search developers, realtors..." style={{ width: '100%', height: 34, border: `1px solid ${colors.border}`, borderRadius: 7, padding: '0 10px 0 32px', fontSize: 12, fontFamily: 'inherit' }} />
           </div>
@@ -220,7 +220,8 @@ export default function AdminDashboard() {
             )}
 
             {/* Recent activity */}
-            <div style={{ background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 12, overflow: 'hidden' }}>
+            <div className="wa-scroll-x">
+            <div style={{ background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 12, overflow: 'hidden', minWidth: 520 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', borderBottom: `1px solid ${colors.border}` }}>
                 <span style={{ fontSize: 14, fontWeight: 600 }}>Recent activity</span>
                 <span style={{ fontSize: 12, color: colors.greenDark, cursor: 'pointer' }}>View all →</span>
@@ -243,6 +244,7 @@ export default function AdminDashboard() {
                   <span style={{ padding: '8px 8px', fontSize: 11, color: colors.textFaint }}>{timeAgo(a.at)}</span>
                 </div>
               ))}
+            </div>
             </div>
           </>
         )}

@@ -12,7 +12,7 @@ const sectionLabel = { fontSize: 9, fontWeight: 700, color: colors.textFaint, te
 const rLabel = { fontSize: 10, fontWeight: 600, color: colors.textFaint, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 12 }
 const btnGhost = { height: 34, padding: '0 14px', background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 7, fontSize: 12, color: colors.textMuted, fontFamily: 'inherit', cursor: 'pointer' }
 const modalShell = { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }
-const modalCardBase = { background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 12, padding: '18px 20px', width: '100%', boxShadow: '0 10px 30px rgba(0,0,0,0.12)' }
+const modalCardBase = { background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 12, padding: '18px 20px', width: '100%', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 10px 30px rgba(0,0,0,0.12)' }
 
 // action-button variants (mirrors AdminRealtorReview styling)
 const actionBase = { height: 36, borderRadius: 8, fontSize: 13, fontWeight: 600, fontFamily: 'inherit', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }
@@ -287,7 +287,7 @@ export default function AdminReview({ role = 'developer' }) {
               <div style={{ ...sectionLabel, marginBottom: 8 }}>Documents</div>
               {docs.length === 0 && <div style={{ padding: '12px 0', fontSize: 12, color: colors.textFaint }}>No documents uploaded.</div>}
               {docs.map((doc) => (
-                <div key={doc.id} style={{ padding: '12px 0', borderBottom: `1px solid ${colors.surfaceMuted}`, display: 'flex', gap: 12, alignItems: 'center' }}>
+                <div key={doc.id} style={{ padding: '12px 0', borderBottom: `1px solid ${colors.surfaceMuted}`, display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
                   <div style={{ flex: 1, display: 'flex', gap: 10, alignItems: 'center' }}>
                     <Icon name="fileText" size={18} color={colors.textFaint} strokeWidth={1.6} />
                     <div>

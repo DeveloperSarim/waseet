@@ -82,9 +82,9 @@ export default function DeveloperNotifications() {
     <>
       <Topbar
         left={
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-            <span style={{ fontSize: 16, fontWeight: 700, letterSpacing: '-0.02em' }}>Notifications</span>
-            {unread > 0 && <span style={{ fontSize: 13, color: colors.textFaint }}>{unread} unread</span>}
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, minWidth: 0 }}>
+            <span style={{ fontSize: 16, fontWeight: 700, letterSpacing: '-0.02em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Notifications</span>
+            {unread > 0 && <span className="wa-hide-sm" style={{ fontSize: 13, color: colors.textFaint }}>{unread} unread</span>}
           </div>
         }
         notifications={unread}

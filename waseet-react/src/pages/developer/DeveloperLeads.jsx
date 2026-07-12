@@ -75,13 +75,13 @@ export default function DeveloperLeads() {
     <>
       <Topbar
         left={
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-            <span style={{ fontSize: 16, fontWeight: 700, letterSpacing: '-0.02em' }}>All Leads</span>
-            <span style={{ fontSize: 13, color: colors.textFaint }}>{leads.length} total</span>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, minWidth: 0 }}>
+            <span style={{ fontSize: 16, fontWeight: 700, letterSpacing: '-0.02em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>All Leads</span>
+            <span className="wa-hide-sm" style={{ fontSize: 13, color: colors.textFaint }}>{leads.length} total</span>
           </div>
         }
         actions={
-          <button style={{ height: 34, padding: '0 14px', background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 8, fontSize: 13, fontWeight: 500, color: colors.textMuted, fontFamily: 'inherit', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
+          <button className="wa-hide-sm" style={{ height: 34, padding: '0 14px', background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 8, fontSize: 13, fontWeight: 500, color: colors.textMuted, fontFamily: 'inherit', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
             <Icon name="download" size={14} color={colors.textMuted} strokeWidth={1.7} />Export CSV
           </button>
         }
@@ -188,7 +188,7 @@ export default function DeveloperLeads() {
       </div>
 
       {/* Pagination */}
-      <div style={{ background: colors.bg, borderTop: `1px solid ${colors.border}`, padding: '12px 22px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
+      <div style={{ background: colors.bg, borderTop: `1px solid ${colors.border}`, padding: '12px 22px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
         <span style={{ fontSize: 12, color: colors.textSoft }}>Showing {visible.length === 0 ? 0 : 1}–{visible.length} of {visible.length} leads</span>
         <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
           <span style={{ height: 30, padding: '0 10px', display: 'flex', alignItems: 'center', border: `1px solid ${colors.border}`, borderRadius: 7, fontSize: 12, color: colors.textFaint, background: '#fff' }}>← Prev</span>

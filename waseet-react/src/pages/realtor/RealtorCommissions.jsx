@@ -117,11 +117,11 @@ export default function RealtorCommissions() {
       />
 
       {/* Tabs */}
-      <div style={{ background: '#fff', borderBottom: `1px solid ${colors.border}`, padding: '0 22px', display: 'flex' }}>
+      <div className="pd-tabs" style={{ background: '#fff', borderBottom: `1px solid ${colors.border}`, padding: '0 22px', display: 'flex', overflowX: 'auto' }}>
         {tabDefs.map(([label, count]) => {
           const on = tab === label
           return (
-            <div key={label} onClick={() => setTab(label)} style={{ padding: '11px 16px', fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', borderBottom: `2px solid ${on ? colors.ink : 'transparent'}`, color: on ? colors.ink : colors.textSoft, fontWeight: on ? 600 : 400 }}>
+            <div key={label} onClick={() => setTab(label)} style={{ padding: '11px 16px', fontSize: 13, cursor: 'pointer', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', borderBottom: `2px solid ${on ? colors.ink : 'transparent'}`, color: on ? colors.ink : colors.textSoft, fontWeight: on ? 600 : 400 }}>
               {label}
               <span style={{ borderRadius: 999, padding: '1px 6px', fontSize: 10, fontWeight: 600, marginLeft: 5, background: on ? colors.ink : colors.surfaceMuted, color: on ? '#fff' : colors.textSoft }}>{count}</span>
             </div>
@@ -130,7 +130,7 @@ export default function RealtorCommissions() {
       </div>
 
       {/* Timeline banner */}
-      <div style={{ background: '#fff', borderBottom: `1px solid ${colors.border}`, padding: '10px 22px', display: 'flex', gap: 10, alignItems: 'center' }}>
+      <div style={{ background: '#fff', borderBottom: `1px solid ${colors.border}`, padding: '10px 22px', display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
         <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.textSoft} strokeWidth={1.8} style={{ flexShrink: 0 }}><circle cx="12" cy="12" r="10" /><path d="M12 16v-4M12 8h.01" /></svg>
         <span style={{ fontSize: 12, fontWeight: 500, color: colors.textMuted }}>Commission timeline:</span>
         <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap' }}>
@@ -169,7 +169,7 @@ export default function RealtorCommissions() {
                 Withdraw {wallet.available > 0 ? money(wallet.available) : ''}
               </button>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12 }}>
               <div style={{ background: colors.greenTint, border: `1px solid ${colors.greenTintBorder}`, borderRadius: 10, padding: '12px 14px' }}>
                 <div style={{ fontSize: 11, color: colors.greenDark, fontWeight: 600, marginBottom: 4 }}>Available to withdraw</div>
                 <div style={{ fontSize: 20, fontWeight: 700, color: colors.greenDark }}>{money(wallet.available)}</div>
@@ -253,7 +253,7 @@ export default function RealtorCommissions() {
                   </div>
                   <div style={{ height: 1, background: colors.surfaceMuted, margin: '12px 0' }} />
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
-                    <div style={{ display: 'flex', gap: 20, alignItems: 'flex-end' }}>
+                    <div style={{ display: 'flex', gap: 20, alignItems: 'flex-end', flexWrap: 'wrap' }}>
                       <div><div style={{ fontSize: 10, color: colors.textFaint, marginBottom: 2 }}>Gross</div><div style={{ fontSize: 13, fontWeight: 600 }}>{money(c.gross)}</div></div>
                       <div><div style={{ fontSize: 10, color: colors.textFaint, marginBottom: 2 }}>Platform ({c.platformPct}%)</div><div style={{ fontSize: 13, fontWeight: 600, color: colors.textFaint }}>− {money(c.gross - c.net)}</div></div>
                       <div><div style={{ fontSize: 10, color: colors.textFaint, marginBottom: 2 }}>You receive</div><div style={{ fontSize: 15, fontWeight: 700 }}>{money(c.net)}</div></div>
@@ -307,7 +307,7 @@ export default function RealtorCommissions() {
       {/* Withdraw modal */}
       {withdrawOpen && wallet && (
         <div onClick={() => !withdrawing && setWithdrawOpen(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 60, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
-          <div onClick={(e) => e.stopPropagation()} style={{ background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 12, padding: '18px 20px', maxWidth: 420, width: '100%', boxShadow: '0 10px 30px rgba(0,0,0,0.12)' }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 12, padding: '18px 20px', maxWidth: 420, width: '100%', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 10px 30px rgba(0,0,0,0.12)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
               <span style={{ fontSize: 15, fontWeight: 700 }}>Withdraw funds</span>
               <span onClick={() => !withdrawing && setWithdrawOpen(false)} style={{ fontSize: 18, color: colors.textFaint, cursor: 'pointer' }}>×</span>

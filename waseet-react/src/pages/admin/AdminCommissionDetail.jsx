@@ -135,7 +135,7 @@ export default function AdminCommissionDetail() {
         }
         actions={
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <button style={btnGhost}>Download Invoice PDF</button>
+            <button className="wa-hide-sm" style={btnGhost}>Download Invoice PDF</button>
             <button onClick={() => navigate('/admin/commissions')} style={btnGhost}>← Back</button>
           </div>
         }

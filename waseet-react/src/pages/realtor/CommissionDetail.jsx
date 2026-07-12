@@ -347,10 +347,10 @@ export default function CommissionDetail() {
         <style>{`@keyframes wsk-spin { to { transform: rotate(360deg); } }`}</style>
         <Topbar
           left={
-            <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-              <span onClick={() => navigate('/realtor/commissions')} style={{ fontSize: 13, color: colors.textFaint, cursor: 'pointer' }}>Commissions</span>
-              <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={colors.borderStrong} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg>
-              <span style={{ fontSize: 13, color: colors.ink, fontWeight: 500 }}>Commission</span>
+            <div style={{ display: 'flex', gap: 6, alignItems: 'center', minWidth: 0 }}>
+              <span onClick={() => navigate('/realtor/commissions')} style={{ fontSize: 13, color: colors.textFaint, cursor: 'pointer', whiteSpace: 'nowrap' }}>Commissions</span>
+              <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={colors.borderStrong} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><polyline points="9 18 15 12 9 6" /></svg>
+              <span style={{ fontSize: 13, color: colors.ink, fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Commission</span>
             </div>
           }
         />
@@ -417,16 +417,16 @@ export default function CommissionDetail() {
 
       <Topbar
         left={
-          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-            <span onClick={() => navigate('/realtor/commissions')} style={{ fontSize: 13, color: colors.textFaint, cursor: 'pointer' }}>Commissions</span>
-            <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={colors.borderStrong} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg>
-            <span style={{ fontSize: 13, color: colors.ink, fontWeight: 500 }}>Deal #{c.dealRef}</span>
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center', minWidth: 0 }}>
+            <span onClick={() => navigate('/realtor/commissions')} style={{ fontSize: 13, color: colors.textFaint, cursor: 'pointer', whiteSpace: 'nowrap' }}>Commissions</span>
+            <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={colors.borderStrong} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><polyline points="9 18 15 12 9 6" /></svg>
+            <span style={{ fontSize: 13, color: colors.ink, fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Deal #{c.dealRef}</span>
           </div>
         }
         actions={
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             <button onClick={doDownload} style={{ ...downloadBtnStyle }}><span>{downloadContent}</span></button>
-            <button onClick={() => navigate('/realtor/commissions')} style={{ height: 34, padding: '0 14px', background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 8, fontSize: 12, fontWeight: 500, color: colors.textMuted, fontFamily: 'inherit', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
+            <button className="wa-hide-sm" onClick={() => navigate('/realtor/commissions')} style={{ height: 34, padding: '0 14px', background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 8, fontSize: 12, fontWeight: 500, color: colors.textMuted, fontFamily: 'inherit', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
               <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6" /></svg>Back
             </button>
           </div>
@@ -442,7 +442,7 @@ export default function CommissionDetail() {
 
       {/* content */}
       <div style={{ flex: 1, overflowY: 'auto', background: colors.bg, padding: '18px 22px' }}>
-        <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start' }}>
+        <div className="rp-cols" style={{ display: 'flex', gap: 20, alignItems: 'flex-start' }}>
 
           {/* LEFT COLUMN */}
           <div style={{ flex: 2, minWidth: 0 }}>

@@ -122,7 +122,7 @@ export default function DeveloperProfile() {
     <>
       <style>{'@keyframes dp-pulse-dot { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }'}</style>
       <Topbar
-        left={<span style={{ fontSize: 16, fontWeight: 700, letterSpacing: '-0.02em' }}>{editing ? 'Edit Company Profile' : 'Company Profile'}</span>}
+        left={<span style={{ fontSize: 16, fontWeight: 700, letterSpacing: '-0.02em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{editing ? 'Edit Company Profile' : 'Company Profile'}</span>}
         actions={
           editing ? (
             <div style={{ display: 'flex', gap: 8 }}>
@@ -140,7 +140,7 @@ export default function DeveloperProfile() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#fff', border: `1px solid ${colors.greenTintBorder}`, borderRadius: 10, padding: '10px 14px', marginBottom: 14, boxShadow: '0 4px 14px rgba(0,0,0,0.05)' }}><svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth={2}><circle cx="12" cy="12" r="10" /><path d="M8 12l3 3 5-6" /></svg><span style={{ fontSize: 13, fontWeight: 500 }}>Profile updated</span></div>
         )}
 
-        <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start' }}>
+        <div className="rp-cols" style={{ display: 'flex', gap: 20, alignItems: 'flex-start' }}>
 
           {/* LEFT */}
           <div style={{ flex: 2, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -264,7 +264,7 @@ export default function DeveloperProfile() {
       {/* DELETE MODAL */}
       {deleteOpen && (
         <div onClick={() => setDeleteOpen(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
-          <div onClick={stop} style={{ background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 12, padding: '18px 20px', maxWidth: 440, width: '100%', boxShadow: '0 10px 30px rgba(0,0,0,0.12)' }}>
+          <div onClick={stop} style={{ background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 12, padding: '18px 20px', maxWidth: 440, width: '100%', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 10px 30px rgba(0,0,0,0.12)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}><span style={{ fontSize: 14, fontWeight: 600 }}>Request account deletion</span><span onClick={() => setDeleteOpen(false)} style={{ fontSize: 18, color: colors.textFaint, cursor: 'pointer' }}>×</span></div>
             <div style={{ background: colors.redTint, border: `1px solid ${colors.redTintBorder}`, borderRadius: 8, padding: '10px 12px', marginBottom: 14, display: 'flex', gap: 8, alignItems: 'flex-start' }}><svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="#DC2626" strokeWidth={1.9} style={{ flexShrink: 0, marginTop: 1 }}><path d="M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z" /><path d="M12 9v4M12 17h.01" /></svg><span style={{ fontSize: 13, color: '#991B1B', lineHeight: 1.6 }}>Financial records (deals, commissions) are retained for 7 years per PDPL requirements. Live projects will be unpublished. Everything else is deleted within 30 days.</span></div>
             <div style={{ fontSize: 12, fontWeight: 500, color: colors.textMuted, marginBottom: 4 }}>Reason (optional):</div>

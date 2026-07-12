@@ -45,17 +45,17 @@ export default function RealtorNetwork() {
     <>
       <Topbar
         left={
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-            <span style={{ fontSize: 16, fontWeight: 700, letterSpacing: '-0.02em' }}>Realtor Network</span>
-            <span style={{ fontSize: 13, color: colors.textFaint }}>{realtors.length} active realtor{realtors.length === 1 ? '' : 's'}</span>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, minWidth: 0 }}>
+            <span style={{ fontSize: 16, fontWeight: 700, letterSpacing: '-0.02em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Realtor Network</span>
+            <span className="wa-hide-sm" style={{ fontSize: 13, color: colors.textFaint, whiteSpace: 'nowrap' }}>{realtors.length} active realtor{realtors.length === 1 ? '' : 's'}</span>
           </div>
         }
-        actions={<span style={{ fontSize: 12, color: colors.textFaint, textAlign: 'right', maxWidth: 200, lineHeight: 1.4 }}>Realtors who submitted leads on your projects</span>}
+        actions={<span className="wa-hide-sm" style={{ fontSize: 12, color: colors.textFaint, textAlign: 'right', maxWidth: 200, lineHeight: 1.4 }}>Realtors who submitted leads on your projects</span>}
       />
 
       {/* FILTER BAR */}
-      <div style={{ background: '#fff', borderBottom: `1px solid ${colors.border}`, padding: '10px 22px', display: 'flex', gap: 8, alignItems: 'center' }}>
-        <div style={{ flex: 1, maxWidth: 280, position: 'relative' }}>
+      <div style={{ background: '#fff', borderBottom: `1px solid ${colors.border}`, padding: '10px 22px', display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+        <div style={{ flex: 1, maxWidth: 280, minWidth: 180, position: 'relative' }}>
           <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth={1.8} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)' }}><circle cx="11" cy="11" r="8" /><path d="M21 21l-4.3-4.3" /></svg>
           <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search by realtor name..." style={{ width: '100%', height: 34, border: `1px solid ${colors.border}`, borderRadius: 7, padding: '0 10px 0 32px', fontSize: 12, fontFamily: 'inherit' }} />
         </div>
@@ -83,7 +83,7 @@ export default function RealtorNetwork() {
         )}
 
         {!loading && visible.length > 0 && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 14, alignItems: 'start' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 300px), 1fr))', gap: 14, alignItems: 'start' }}>
             {visible.map((r) => (
               <div key={r.realtorId} style={{ background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 12, padding: 16 }}>
                 <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start', marginBottom: 14 }}>

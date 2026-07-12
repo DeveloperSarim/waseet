@@ -222,10 +222,11 @@ export default function AdminDataExport() {
 
   return (
     <>
+      <style>{`@media (max-width: 900px) { .ex-cols { flex-direction: column !important; } }`}</style>
       <Topbar
         title="Data Export"
         right={
-          <span style={{ fontSize: 11, color: colors.textFaint, display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span className="wa-hide-sm" style={{ fontSize: 11, color: colors.textFaint, display: 'flex', alignItems: 'center', gap: 6 }}>
             <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke={colors.textFaint} strokeWidth={1.8}><path d="M12 2l8 4v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6z" /></svg>
             All exports are logged for compliance
           </span>
@@ -342,6 +343,8 @@ export default function AdminDataExport() {
                 <span style={{ fontSize: 14, fontWeight: 600 }}>Recent exports</span>
                 <span style={{ fontSize: 12, color: colors.textFaint }}>Audit log</span>
               </div>
+              <div className="wa-scroll-x">
+              <div style={{ minWidth: 720 }}>
               <div style={{ display: 'grid', gridTemplateColumns: historyCols, gap: 8, background: colors.bg, padding: '8px 16px', borderBottom: `1px solid ${colors.border}` }}>
                 <span style={historyHead}>File</span>
                 <span style={historyHead}>Type</span>
@@ -363,6 +366,8 @@ export default function AdminDataExport() {
                   <span style={{ fontSize: 11, color: colors.textFaint }}>{h.size}</span>
                 </div>
               ))}
+              </div>
+              </div>
             </div>
           </div>
 
@@ -418,7 +423,7 @@ export default function AdminDataExport() {
       {/* PHONE CONFIRM MODAL */}
       {phoneModal && (
         <div onClick={closeModal} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
-          <div onClick={(e) => e.stopPropagation()} style={{ background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 12, padding: '18px 20px', maxWidth: 440, width: '100%', boxShadow: '0 10px 30px rgba(0,0,0,0.12)' }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 12, padding: '18px 20px', maxWidth: 440, width: '100%', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 10px 30px rgba(0,0,0,0.12)' }}>
             <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}>Export includes phone numbers</div>
             <div style={{ background: colors.redTint, border: `1px solid ${colors.redTintBorder}`, borderRadius: 8, padding: '12px 14px', margin: '12px 0 14px', display: 'flex', gap: 8, alignItems: 'flex-start' }}>
               <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={colors.red} strokeWidth={2} style={{ flexShrink: 0, marginTop: 1 }}><circle cx="12" cy="12" r="10" /><path d="M12 8v4M12 16h.01" /></svg>

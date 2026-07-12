@@ -112,7 +112,7 @@ export default function AdminDisputeDetail() {
       />
 
       {/* Status banner */}
-      <div style={{ background: sm.tint, borderBottom: `1px solid ${sm.tintBorder}`, padding: '10px 22px', display: 'flex', gap: 10, alignItems: 'center' }}>
+      <div style={{ background: sm.tint, borderBottom: `1px solid ${sm.tintBorder}`, padding: '10px 22px', display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
         <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={sm.stroke} strokeWidth={2} style={{ flexShrink: 0 }}>{sm.icon}</svg>
         <span style={{ fontSize: 13, fontWeight: 600, color: sm.color }}>Dispute {dispute.ref} · {sm.label}</span>
         <span style={{ color: colors.borderStrong }}>·</span>

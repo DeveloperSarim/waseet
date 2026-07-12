@@ -140,9 +140,9 @@ export default function MyProjects() {
     <>
       <Topbar
         left={
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-            <span style={{ fontSize: 16, fontWeight: 700, letterSpacing: '-0.02em' }}>My Projects</span>
-            <span style={{ fontSize: 13, color: colors.textFaint }}>{projects.length} total</span>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, minWidth: 0 }}>
+            <span style={{ fontSize: 16, fontWeight: 700, letterSpacing: '-0.02em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>My Projects</span>
+            <span className="wa-hide-sm" style={{ fontSize: 13, color: colors.textFaint }}>{projects.length} total</span>
           </div>
         }
         actions={
@@ -170,7 +170,7 @@ export default function MyProjects() {
             )}
           </div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 14, alignItems: 'start' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 320px), 1fr))', gap: 14, alignItems: 'start' }}>
             {visible.map((p) => (
               <ProjectCard key={p.id} p={p} onEdit={onEdit} onDelete={onDelete} />
             ))}

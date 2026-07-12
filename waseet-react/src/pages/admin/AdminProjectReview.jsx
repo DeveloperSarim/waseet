@@ -15,7 +15,7 @@ const fieldLabel = { fontSize: 10, color: colors.textFaint, textTransform: 'uppe
 const chevronBtn = { position: 'absolute', top: '50%', transform: 'translateY(-50%)', width: 36, height: 36, borderRadius: '50%', background: 'rgba(255,255,255,0.9)', border: `1px solid ${colors.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }
 const unitGrid = '0.8fr 1.1fr 1.4fr 0.8fr 0.9fr'
 const modalShell = { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }
-const modalCard = { background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 12, padding: '18px 20px', maxWidth: 420, width: '100%', boxShadow: '0 10px 30px rgba(0,0,0,0.12)' }
+const modalCard = { background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 12, padding: '18px 20px', maxWidth: 420, width: '100%', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 10px 30px rgba(0,0,0,0.12)' }
 const btnGhost = { height: 34, padding: '0 14px', background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 7, fontSize: 12, color: colors.textMuted, fontFamily: 'inherit', cursor: 'pointer' }
 
 const money = (n) => `SAR ${Number(n || 0).toLocaleString()}`
@@ -143,7 +143,7 @@ export default function AdminProjectReview() {
         }
         actions={
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <button onClick={() => navigate('/admin/projects')} style={btnGhost}>← Back to list</button>
+            <button onClick={() => navigate('/admin/projects')} className="wa-hide-sm" style={btnGhost}>← Back to list</button>
             <button onClick={() => navigate('/admin/projects/' + id + '/edit')} style={{ height: 34, padding: '0 14px', background: colors.ink, border: 'none', borderRadius: 8, fontSize: 12, fontWeight: 600, color: '#fff', fontFamily: 'inherit', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
               <Icon name="edit" size={13} color="#fff" />Edit
             </button>
@@ -234,7 +234,8 @@ export default function AdminProjectReview() {
                 </div>
 
                 {/* Unit types */}
-                <div style={{ background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 12, overflow: 'hidden', marginBottom: 12 }}>
+                <div className="wa-scroll-x" style={{ marginBottom: 12 }}>
+                <div style={{ background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 12, overflow: 'hidden', minWidth: 480 }}>
                   <div style={{ padding: '12px 16px', borderBottom: `1px solid ${colors.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span style={{ fontSize: 9, fontWeight: 700, color: colors.textFaint, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Unit Types</span>
                     <span style={{ fontSize: 11, color: colors.textFaint }}>{unitRows.length} type{unitRows.length === 1 ? '' : 's'}</span>
@@ -251,6 +252,7 @@ export default function AdminProjectReview() {
                       <span style={{ padding: '10px 8px' }}><span style={{ background: colors.greenTint, border: `1px solid ${colors.greenTintBorder}`, color: colors.greenDark, borderRadius: 4, padding: '2px 8px', fontSize: 11, fontWeight: 700 }}>{u.comm}</span></span>
                     </div>
                   ))}
+                </div>
                 </div>
 
                 {/* Floor Plans */}
@@ -364,13 +366,13 @@ export default function AdminProjectReview() {
           </div>
 
           {/* Sticky action bar — status-aware */}
-          <div style={{ background: '#fff', borderTop: `1px solid ${colors.border}`, padding: '12px 22px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16 }} className="wa-form">
-            <div style={{ flex: 1, maxWidth: 420 }}>
+          <div style={{ background: '#fff', borderTop: `1px solid ${colors.border}`, padding: '12px 22px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, flexWrap: 'wrap' }} className="wa-form">
+            <div style={{ flex: 1, minWidth: 200, maxWidth: 420 }}>
               {isPending && (
                 <input value={rejectReason} onChange={(e) => { setRejectReason(e.target.value); setReasonError(false) }} placeholder="Rejection reason (required if rejecting)..." style={{ width: '100%', height: 34, border: `1px solid ${reasonError ? colors.redTintBorder : colors.border}`, borderRadius: 7, padding: '0 12px', fontSize: 13, fontFamily: 'inherit' }} />
               )}
             </div>
-            <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+            <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
               <button onClick={() => navigate('/admin/projects')} style={{ height: 34, padding: '0 14px', background: 'transparent', border: 'none', fontSize: 12, color: colors.textSoft, fontFamily: 'inherit', cursor: 'pointer' }}>← Back</button>
 
               {isPending && (

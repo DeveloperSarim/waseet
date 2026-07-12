@@ -80,14 +80,14 @@ export default function LeadDetail() {
     <>
       <Topbar
         left={
-          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-            <span onClick={() => navigate('/realtor/leads')} style={{ fontSize: 13, color: colors.textFaint, cursor: 'pointer' }}>My Leads</span>
-            <Icon name="chevronRight" size={14} color={colors.borderStrong} strokeWidth={2} />
-            <span style={{ fontSize: 13, fontWeight: 500 }}>{crumb}</span>
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center', minWidth: 0 }}>
+            <span onClick={() => navigate('/realtor/leads')} style={{ fontSize: 13, color: colors.textFaint, cursor: 'pointer', whiteSpace: 'nowrap' }}>My Leads</span>
+            <Icon name="chevronRight" size={14} color={colors.borderStrong} strokeWidth={2} style={{ flexShrink: 0 }} />
+            <span style={{ fontSize: 13, fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{crumb}</span>
           </div>
         }
         actions={
-          <button onClick={() => navigate('/realtor/leads')} style={{ height: 34, padding: '0 14px', background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 8, fontSize: 12, color: colors.textMuted, fontFamily: 'inherit', cursor: 'pointer' }}>← Back to leads</button>
+          <button className="wa-hide-sm" onClick={() => navigate('/realtor/leads')} style={{ height: 34, padding: '0 14px', background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 8, fontSize: 12, color: colors.textMuted, fontFamily: 'inherit', cursor: 'pointer' }}>← Back to leads</button>
         }
       />
 
@@ -268,7 +268,7 @@ export default function LeadDetail() {
       {/* Dispute modal */}
       {disputeOpen && lead && (
         <div onClick={() => setDisputeOpen(false)} style={modalShell}>
-          <div onClick={(e) => e.stopPropagation()} style={{ background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 12, padding: '18px 20px', maxWidth: 440, width: '100%', boxShadow: '0 10px 30px rgba(0,0,0,0.12)' }} className="wa-form">
+          <div onClick={(e) => e.stopPropagation()} style={{ background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 12, padding: '18px 20px', maxWidth: 440, width: '100%', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 10px 30px rgba(0,0,0,0.12)' }} className="wa-form">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}><span style={{ fontSize: 14, fontWeight: 600 }}>Raise a dispute</span><span onClick={() => setDisputeOpen(false)} style={{ fontSize: 18, color: colors.textFaint, cursor: 'pointer' }}>×</span></div>
             <div style={{ background: colors.bg, border: `1px solid ${colors.surfaceMuted}`, borderRadius: 8, padding: '10px 12px', marginBottom: 14 }}><div style={{ fontSize: 13, color: colors.textMuted }}>{lead.clientName || '—'} · {lead.projectName || '—'}{lead.unit ? ` ${lead.unit}` : ''}</div><div style={{ fontSize: 11, color: colors.textFaint, marginTop: 3 }}>Lead #{lead.id}</div></div>
             <div style={{ fontSize: 12, fontWeight: 500, color: colors.textMuted, marginBottom: 4 }}>Reason for dispute *</div>

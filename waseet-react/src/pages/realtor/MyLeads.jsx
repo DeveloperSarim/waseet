@@ -77,9 +77,9 @@ export default function MyLeads() {
     <>
       <Topbar
         left={
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-            <span style={{ fontSize: 16, fontWeight: 700, letterSpacing: '-0.02em' }}>My Leads</span>
-            <span style={{ fontSize: 13, color: colors.textFaint }}>{leads.length} total</span>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, minWidth: 0 }}>
+            <span style={{ fontSize: 16, fontWeight: 700, letterSpacing: '-0.02em', whiteSpace: 'nowrap' }}>My Leads</span>
+            <span style={{ fontSize: 13, color: colors.textFaint, whiteSpace: 'nowrap' }}>{leads.length} total</span>
           </div>
         }
         actions={<Button variant="primary" onClick={() => navigate('/realtor/browse')}>Browse Projects →</Button>}
@@ -87,8 +87,8 @@ export default function MyLeads() {
       <TabBar active={tab} onChange={setTab} tabDefs={tabDefs} />
 
       {/* Search / filter */}
-      <div style={{ background: '#fff', borderBottom: `1px solid ${colors.border}`, padding: '10px 22px', display: 'flex', gap: 8, alignItems: 'center' }}>
-        <div style={{ position: 'relative', flex: 1, maxWidth: 280 }}>
+      <div style={{ background: '#fff', borderBottom: `1px solid ${colors.border}`, padding: '10px 22px', display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+        <div style={{ position: 'relative', flex: 1, maxWidth: 280, minWidth: 180 }}>
           <Icon name="search" size={14} color={colors.textFaint} strokeWidth={1.8} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)' }} />
           <input placeholder="Search by client name..." style={{ width: '100%', height: 34, border: `1px solid ${colors.border}`, borderRadius: 7, padding: '0 10px 0 32px', fontSize: 12, fontFamily: 'inherit' }} />
         </div>

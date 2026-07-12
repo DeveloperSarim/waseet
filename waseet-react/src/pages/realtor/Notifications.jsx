@@ -95,9 +95,9 @@ export default function Notifications() {
     <>
       <Topbar
         left={
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-            <span style={{ fontSize: 16, fontWeight: 700, letterSpacing: '-0.02em' }}>Notifications</span>
-            {hasUnread && <span style={{ fontSize: 13, color: colors.textFaint }}>{unreadText}</span>}
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, minWidth: 0 }}>
+            <span style={{ fontSize: 16, fontWeight: 700, letterSpacing: '-0.02em', whiteSpace: 'nowrap' }}>Notifications</span>
+            {hasUnread && <span style={{ fontSize: 13, color: colors.textFaint, whiteSpace: 'nowrap' }}>{unreadText}</span>}
           </div>
         }
         right={
@@ -113,6 +113,7 @@ export default function Notifications() {
               </button>
             )}
             <button
+              className="wa-hide-sm"
               onMouseEnter={() => setPrefHover(true)}
               onMouseLeave={() => setPrefHover(false)}
               style={{ height: 34, padding: '0 14px', background: prefHover ? colors.surfaceAlt : '#fff', border: `1px solid ${colors.border}`, borderRadius: 7, fontSize: 12, color: colors.textMuted, fontFamily: 'inherit', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
@@ -128,7 +129,7 @@ export default function Notifications() {
       />
 
       {/* Tabs */}
-      <div style={{ background: '#fff', borderBottom: `1px solid ${colors.border}`, padding: '0 22px', display: 'flex' }}>
+      <div className="pd-tabs" style={{ background: '#fff', borderBottom: `1px solid ${colors.border}`, padding: '0 22px', display: 'flex', overflowX: 'auto' }}>
         {tabDefs.map((id) => {
           const on = tab === id
           return (

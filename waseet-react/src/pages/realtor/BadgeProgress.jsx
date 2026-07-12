@@ -225,15 +225,15 @@ export default function BadgeProgress() {
       <style>{bpKeyframes}</style>
       <Topbar
         left={
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span onClick={() => navigate('/realtor/profile')} style={{ fontSize: 13, color: colors.textFaint, cursor: 'pointer' }}>My Profile</span>
-            <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#D1D5DB" strokeWidth={2}><path d="M9 6l6 6-6 6" /></svg>
-            <span style={{ fontSize: 13, color: colors.ink, fontWeight: 500 }}>Badge Progress</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
+            <span onClick={() => navigate('/realtor/profile')} style={{ fontSize: 13, color: colors.textFaint, cursor: 'pointer', whiteSpace: 'nowrap' }}>My Profile</span>
+            <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#D1D5DB" strokeWidth={2} style={{ flexShrink: 0 }}><path d="M9 6l6 6-6 6" /></svg>
+            <span style={{ fontSize: 13, color: colors.ink, fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Badge Progress</span>
           </div>
         }
         right={
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <span style={{ fontSize: 11, color: colors.textFaint, display: 'flex', alignItems: 'center', gap: 4 }}>
+            <span className="wa-hide-sm" style={{ fontSize: 11, color: colors.textFaint, display: 'flex', alignItems: 'center', gap: 4 }}>
               <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth={1.8}><path d="M23 4v6h-6M1 20v-6h6M3.5 9a9 9 0 0 1 14.8-3.4L23 10M1 14l4.7 4.4A9 9 0 0 0 20.5 15" /></svg>
               Updated in real time
             </span>
@@ -249,7 +249,7 @@ export default function BadgeProgress() {
         <div style={{ maxWidth: 860, margin: '0 auto' }}>
 
           {/* HERO */}
-          <div style={{ background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 12, padding: '22px 24px', marginBottom: 16, display: 'flex', gap: 24, alignItems: 'center' }}>
+          <div className="pd-cols" style={{ background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 12, padding: '22px 24px', marginBottom: 16, display: 'flex', gap: 24, alignItems: 'center' }}>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', padding: '0 20px', borderRight: `1px solid ${colors.surfaceMuted}` }}>
               <div style={{ fontSize: 56, marginBottom: 8, lineHeight: 1 }}>{currentMeta.emoji}</div>
               <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-0.02em', marginBottom: 4 }}>{currentMeta.name}</div>
@@ -305,8 +305,8 @@ export default function BadgeProgress() {
                     {t.statusText}
                   </span>
                 </div>
-                <div style={{ padding: '14px 18px', display: 'flex', gap: 20 }}>
-                  <div style={{ flex: 1 }}>
+                <div style={{ padding: '14px 18px', display: 'flex', gap: 20, flexWrap: 'wrap' }}>
+                  <div style={{ flex: 1, minWidth: 200 }}>
                     <div style={{ fontSize: 10, fontWeight: 600, color: colors.textFaint, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 10 }}>Requirements</div>
                     {t.reqs.map((r, i) => (
                       <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'flex-start', marginBottom: 6 }}>
@@ -323,7 +323,7 @@ export default function BadgeProgress() {
                       </div>
                     ))}
                   </div>
-                  <div style={{ flex: 1 }}>
+                  <div style={{ flex: 1, minWidth: 200 }}>
                     <div style={{ fontSize: 10, fontWeight: 600, color: colors.textFaint, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 10 }}>What you unlock</div>
                     {t.unlocks.map((u, i) => (
                       <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 6 }}>
@@ -350,7 +350,7 @@ export default function BadgeProgress() {
                 Last 30 days <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth={2}><path d="M6 9l6 6 6-6" /></svg>
               </span>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12 }}>
               {perfStats.map((p) => (
                 <div key={p.label} style={{ background: colors.bg, border: `1px solid ${colors.surfaceMuted}`, borderRadius: 10, padding: '12px 14px' }}>
                   <div style={{ width: 28, height: 28, borderRadius: 7, background: colors.greenTint, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 8 }}>
@@ -382,14 +382,14 @@ export default function BadgeProgress() {
 
       {/* CELEBRATION OVERLAY */}
       {celebrating && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)', zIndex: 90, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', overflow: 'hidden' }}>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)', zIndex: 90, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', overflow: 'hidden', padding: '0 20px' }}>
           {confetti.map((c, i) => (
             <span key={i} className="bp-confetti" style={{ left: c.left, background: c.background, animationDuration: c.animationDuration, animationDelay: c.animationDelay }} />
           ))}
           <div style={{ fontSize: 80, lineHeight: 1, animation: 'bp-badge-pop 600ms ease' }}>{currentMeta.emoji}</div>
           <div style={{ fontSize: 28, fontWeight: 700, letterSpacing: '-0.02em', color: '#fff', marginTop: 16, marginBottom: 4 }}>Congratulations!</div>
           <div style={{ fontSize: 16, color: 'rgba(255,255,255,0.7)', marginBottom: 24 }}>You've reached {currentMeta.name}!</div>
-          <div style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 12, padding: '18px 24px', marginBottom: 24, minWidth: 320 }}>
+          <div style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 12, padding: '18px 24px', marginBottom: 24, maxWidth: 320, width: '100%' }}>
             <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 12 }}>You've unlocked:</div>
             {perks.map((p) => (
               <div key={p} style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>

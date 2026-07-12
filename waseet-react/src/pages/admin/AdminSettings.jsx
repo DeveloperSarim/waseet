@@ -337,17 +337,17 @@ export default function AdminSettings() {
 
   return (
     <>
-      <style>{`@keyframes pulse-dot { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }`}</style>
+      <style>{`@keyframes pulse-dot { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } } @media (max-width: 900px) { .set-cols { flex-direction: column !important; } .set-nav { position: static !important; width: 100% !important; } }`}</style>
       <Topbar
         title="Platform Settings"
-        right={<span style={{ fontSize: 11, color: colors.textFaint }}>Last saved: {lastSaved ? fmtDateTime(lastSaved.toISOString()) : 'June 28 · 9:32 AM'}</span>}
+        right={<span className="wa-hide-sm" style={{ fontSize: 11, color: colors.textFaint }}>Last saved: {lastSaved ? fmtDateTime(lastSaved.toISOString()) : 'June 28 · 9:32 AM'}</span>}
       />
 
       <div style={{ flex: 1, overflowY: 'auto', background: colors.bg, padding: '18px 22px' }}>
-        <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start' }}>
+        <div className="set-cols" style={{ display: 'flex', gap: 20, alignItems: 'flex-start' }}>
 
           {/* SETTINGS NAV */}
-          <div style={{ width: 200, flexShrink: 0, background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 12, padding: '10px 8px', position: 'sticky', top: 0 }}>
+          <div className="set-nav" style={{ width: 200, flexShrink: 0, background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 12, padding: '10px 8px', position: 'sticky', top: 0 }}>
             {settingsNav.map((n) => {
               const on = section === n.id
               return (
@@ -394,7 +394,8 @@ export default function AdminSettings() {
                 </div>
                 <div style={{ fontSize: 13, fontWeight: 600, color: colors.textMuted, marginBottom: 4 }}>Per-developer overrides</div>
                 <div style={{ fontSize: 12, color: colors.textFaint, marginBottom: 12 }}>These override the global default for specific developers.</div>
-                <div style={{ border: `1px solid ${colors.border}`, borderRadius: 10, overflow: 'hidden' }}>
+                <div className="wa-scroll-x">
+                <div style={{ border: `1px solid ${colors.border}`, borderRadius: 10, overflow: 'hidden', minWidth: 520 }}>
                   <div style={{ background: colors.bg, borderBottom: `1px solid ${colors.border}`, padding: '8px 14px', display: 'flex', alignItems: 'center', gap: 12 }}>
                     <span style={{ flex: 2, fontSize: 10, fontWeight: 600, color: colors.textFaint, textTransform: 'uppercase' }}>Developer</span>
                     <span style={{ flex: 1, fontSize: 10, fontWeight: 600, color: colors.textFaint, textTransform: 'uppercase' }}>Override %</span>
@@ -428,6 +429,7 @@ export default function AdminSettings() {
                     <input value={addPct} onChange={(e) => setAddPct(e.target.value)} placeholder="%" style={{ width: 60, height: 30, border: `1px solid ${colors.border}`, borderRadius: 6, padding: '0 8px', fontSize: 13, textAlign: 'right', fontFamily: 'inherit' }} />
                     <span onClick={addOverride} style={{ height: 28, padding: '0 10px', background: colors.green, borderRadius: 6, fontSize: 11, fontWeight: 600, color: '#fff', display: 'flex', alignItems: 'center', cursor: 'pointer' }}>+ Add</span>
                   </div>
+                </div>
                 </div>
               </div>
             )}
@@ -581,7 +583,7 @@ export default function AdminSettings() {
                       <div style={{ padding: '14px', fontSize: 12, color: colors.textFaint, textAlign: 'center' }}>No backups yet.</div>
                     )}
                     {backups.map((b) => (
-                      <div key={b.id} style={{ padding: '10px 14px', borderBottom: `1px solid ${colors.surfaceMuted}`, display: 'flex', alignItems: 'center', gap: 12 }}>
+                      <div key={b.id} style={{ padding: '10px 14px', borderBottom: `1px solid ${colors.surfaceMuted}`, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ fontSize: 12, fontWeight: 500, color: colors.textMuted, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{b.filename}</div>
                           <div style={{ fontSize: 11, color: colors.textFaint }}>{fmtDateTime(b.createdAt)} · {fmtBytes(b.sizeBytes)}{b.note ? ` · ${b.note}` : ''}</div>

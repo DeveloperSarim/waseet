@@ -136,13 +136,13 @@ export default function AdminProjects() {
 
       <Topbar
         left={
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, minWidth: 0, overflow: 'hidden', whiteSpace: 'nowrap' }}>
             <span style={{ fontSize: 16, fontWeight: 700, letterSpacing: '-0.02em' }}>Projects</span>
             <span style={{ fontSize: 13, color: colors.textFaint }}>{counts.all} total</span>
           </div>
         }
         actions={
-          <button style={{ height: 34, padding: '0 14px', background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 7, fontSize: 12, color: colors.textMuted, fontFamily: 'inherit', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
+          <button className="wa-hide-sm" style={{ height: 34, padding: '0 14px', background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 7, fontSize: 12, color: colors.textMuted, fontFamily: 'inherit', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
             <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={1.8}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" /></svg>Export CSV
           </button>
         }
@@ -190,7 +190,8 @@ export default function AdminProjects() {
           </div>
         )}
 
-        <div style={{ background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 12, overflow: 'hidden', margin: '16px 22px' }}>
+        <div className="wa-scroll-x" style={{ margin: '16px 22px' }}>
+        <div style={{ background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 12, overflow: 'hidden', minWidth: 1040 }}>
           {/* Header */}
           <div style={{ background: colors.bg, borderBottom: `1px solid ${colors.border}`, padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
             <span style={{ flex: 2.5, ...headCell }}>Project</span>
@@ -266,6 +267,7 @@ export default function AdminProjects() {
               <div style={{ fontSize: 12, color: colors.textFaint, marginTop: 4 }}>Projects submitted by developers will appear here.</div>
             </div>
           )}
+        </div>
         </div>
 
         {/* Feature management */}

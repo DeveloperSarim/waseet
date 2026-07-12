@@ -20,11 +20,11 @@ export default function RealtorSettings() {
         avatar={<UserAvatar size={30} />}
       />
       {/* sub-tabs */}
-      <div style={{ background: '#fff', borderBottom: `1px solid ${colors.border}`, padding: '0 22px', display: 'flex' }}>
+      <div className="pd-tabs" style={{ background: '#fff', borderBottom: `1px solid ${colors.border}`, padding: '0 22px', display: 'flex', overflowX: 'auto' }}>
         {tabs.map((t) => {
           const on = tab === t
           return (
-            <div key={t} onClick={() => setTab(t)} style={{ padding: '11px 16px', fontSize: 13, cursor: 'pointer', borderBottom: `2px solid ${on ? colors.ink : 'transparent'}`, color: on ? colors.ink : colors.textSoft, fontWeight: on ? 600 : 400 }}>{t}</div>
+            <div key={t} onClick={() => setTab(t)} style={{ padding: '11px 16px', fontSize: 13, cursor: 'pointer', whiteSpace: 'nowrap', borderBottom: `2px solid ${on ? colors.ink : 'transparent'}`, color: on ? colors.ink : colors.textSoft, fontWeight: on ? 600 : 400 }}>{t}</div>
           )
         })}
       </div>

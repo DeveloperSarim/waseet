@@ -198,10 +198,10 @@ export default function NotificationPreferences({ embed = false }) {
       {!embed && (
         <Topbar
           left={
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span onClick={() => navigate('/realtor/notifications')} style={{ fontSize: 13, color: colors.textFaint, cursor: 'pointer' }}>Notifications</span>
-              <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={colors.borderStrong} strokeWidth={2}><path d="M9 6l6 6-6 6" /></svg>
-              <span style={{ fontSize: 13, color: colors.ink, fontWeight: 500 }}>Preferences</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
+              <span onClick={() => navigate('/realtor/notifications')} style={{ fontSize: 13, color: colors.textFaint, cursor: 'pointer', whiteSpace: 'nowrap' }}>Notifications</span>
+              <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={colors.borderStrong} strokeWidth={2} style={{ flexShrink: 0 }}><path d="M9 6l6 6-6 6" /></svg>
+              <span style={{ fontSize: 13, color: colors.ink, fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Preferences</span>
             </div>
           }
           actions={<button onClick={save} style={saveTopStyle}>{saveLabel}</button>}
@@ -363,7 +363,7 @@ export default function NotificationPreferences({ embed = false }) {
             <div style={sectionDesc}>Pause non-urgent notifications during specific hours.</div>
             {quietOn && (
               <div style={{ marginTop: 14 }}>
-                <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
                   <span style={{ fontSize: 12, color: colors.textMuted }}>From</span>
                   <select style={{ height: 34, border: `1px solid ${colors.border}`, borderRadius: 7, padding: '0 10px', fontSize: 13, fontFamily: 'inherit', background: '#fff' }}>
                     <option>10:00 PM</option>

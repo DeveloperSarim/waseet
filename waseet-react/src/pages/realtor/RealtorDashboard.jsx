@@ -119,7 +119,7 @@ export default function RealtorDashboard() {
         </div>
 
         {/* KPIs */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 12, marginBottom: 14 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12, marginBottom: 14 }}>
           {kpiMeta.map((k) => (
             <div key={k.label} style={{ background: '#fff', border: `1px solid ${colors.border}`, borderRadius: radius.xl, padding: '14px 16px' }}>
               <div style={{ width: 32, height: 32, background: colors.greenTint, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 10 }}>

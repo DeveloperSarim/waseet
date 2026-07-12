@@ -243,6 +243,8 @@ export default function AdminAnnouncements() {
                   <span onClick={() => setClearOpen(true)} style={{ fontSize: 12, color: colors.red, cursor: 'pointer', fontWeight: 500 }}>Clear history</span>
                 )}
               </div>
+              <div className="wa-scroll-x">
+              <div style={{ minWidth: 560 }}>
               <div style={{ background: colors.bg, borderBottom: `1px solid ${colors.border}`, padding: '8px 16px', display: 'flex' }}>
                 <span style={{ flex: 2, fontSize: 10, fontWeight: 600, color: colors.textFaint, textTransform: 'uppercase' }}>Subject</span>
                 <span style={{ flex: 1, fontSize: 10, fontWeight: 600, color: colors.textFaint, textTransform: 'uppercase' }}>Audience</span>
@@ -269,6 +271,8 @@ export default function AdminAnnouncements() {
                   <div style={{ fontSize: 12, color: colors.textFaint, marginTop: 4 }}>Compose one above to notify realtors and developers.</div>
                 </div>
               )}
+              </div>
+              </div>
             </div>
           </div>
 
@@ -351,7 +355,7 @@ export default function AdminAnnouncements() {
       {/* CLEAR HISTORY MODAL */}
       {clearOpen && (
         <div onClick={() => !clearing && setClearOpen(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
-          <div onClick={(e) => e.stopPropagation()} style={{ background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 12, padding: '18px 20px', maxWidth: 420, width: '100%', boxShadow: '0 10px 30px rgba(0,0,0,0.12)' }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 12, padding: '18px 20px', maxWidth: 420, width: '100%', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 10px 30px rgba(0,0,0,0.12)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
               <span style={{ fontSize: 14, fontWeight: 600 }}>Clear announcement history?</span>
               <span onClick={() => !clearing && setClearOpen(false)} style={{ fontSize: 18, color: colors.textFaint, cursor: 'pointer' }}>×</span>

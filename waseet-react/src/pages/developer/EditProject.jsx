@@ -244,27 +244,27 @@ export default function EditProject() {
       {/* top bar */}
       <Topbar
         left={
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span style={{ fontSize: 13, color: colors.textFaint, cursor: 'pointer' }} onClick={() => navigate('/developer/projects')}>My Projects</span>
-            <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#D1D5DB" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg>
-            <span style={{ fontSize: 13, color: colors.textFaint, cursor: 'pointer' }} onClick={() => navigate('/developer/projects')}>{project.title}</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
+            <span className="wa-hide-sm" style={{ fontSize: 13, color: colors.textFaint, cursor: 'pointer', whiteSpace: 'nowrap' }} onClick={() => navigate('/developer/projects')}>My Projects</span>
+            <svg className="wa-hide-sm" width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#D1D5DB" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg>
+            <span style={{ fontSize: 13, color: colors.textFaint, cursor: 'pointer', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} onClick={() => navigate('/developer/projects')}>{project.title}</span>
             <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#D1D5DB" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg>
             <span style={{ fontSize: 13, color: colors.ink, fontWeight: 500 }}>Edit</span>
           </div>
         }
         actions={
           <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-            <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+            <div className="wa-hide-sm" style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
               <span style={{ width: 6, height: 6, borderRadius: 999, background: colors.green, animation: 'wsk-pulse 2s ease-in-out infinite' }} />
               <span style={{ fontSize: 12, color: colors.greenDark }}>Live on marketplace</span>
             </div>
-            <button style={{ height: 34, padding: '0 14px', background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 8, fontSize: 12, fontWeight: 500, color: colors.textMuted, fontFamily: 'inherit', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}><svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#374151" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" /></svg>View on Marketplace</button>
+            <button className="wa-hide-sm" style={{ height: 34, padding: '0 14px', background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 8, fontSize: 12, fontWeight: 500, color: colors.textMuted, fontFamily: 'inherit', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}><svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#374151" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" /></svg>View on Marketplace</button>
           </div>
         }
       />
 
       {/* notice banner */}
-      <div style={{ background: colors.amberTint, borderBottom: `1px solid ${colors.amberTintBorder}`, padding: '10px 22px', display: 'flex', gap: 10, alignItems: 'center' }}>
+      <div style={{ background: colors.amberTint, borderBottom: `1px solid ${colors.amberTintBorder}`, padding: '10px 22px', display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
         <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="#D97706" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: 13, fontWeight: 600, color: colors.amberText, marginBottom: 2 }}>Editing a live project</div>
@@ -274,7 +274,8 @@ export default function EditProject() {
       </div>
 
       {/* stepper */}
-      <div style={{ background: '#fff', borderBottom: `1px solid ${colors.border}`, padding: '14px 24px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0 }}>
+      <div className="wa-scroll-x" style={{ background: '#fff', borderBottom: `1px solid ${colors.border}`, padding: '14px 24px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0, width: 'max-content', minWidth: '100%', margin: '0 auto' }}>
         {stepDefs.map((st, i) => {
           const isActive = step === st.n
           const isDone = step > st.n
@@ -286,12 +287,13 @@ export default function EditProject() {
             <div key={st.n} style={{ display: 'flex', alignItems: 'center' }}>
               <div onClick={() => go(st.n)} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
                 <div style={{ width: 26, height: 26, borderRadius: 999, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 600, background: bg, color, border }}><span>{mark}</span></div>
-                <span style={{ fontSize: 12, fontWeight: isActive ? 600 : 500, color: isActive ? colors.ink : isDone ? colors.greenDark : colors.textFaint }}>{st.label}</span>
+                <span style={{ fontSize: 12, fontWeight: isActive ? 600 : 500, color: isActive ? colors.ink : isDone ? colors.greenDark : colors.textFaint, whiteSpace: 'nowrap' }}>{st.label}</span>
               </div>
               {i < stepDefs.length - 1 && <div style={{ width: 36, height: 2, margin: '0 10px', background: step > st.n ? colors.green : colors.border }} />}
             </div>
           )
         })}
+      </div>
       </div>
 
       {/* content scroll */}
@@ -317,15 +319,15 @@ export default function EditProject() {
                     </div>
                   )}
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 10, marginBottom: 12 }}>
                   <div><label style={fieldLabel}>Project Type *</label><div style={selectBox}>{ptype || '—'}{chevron}</div></div>
                   <div><label style={fieldLabel}>Development Status *</label><div style={selectBox}>Under Construction{chevron}</div></div>
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 10, marginBottom: 12 }}>
                   <div><label style={fieldLabel}>Expected Handover *</label><input defaultValue="Q4 2027" style={{ ...inputBase, border: `1px solid ${colors.border}` }} /></div>
                   <div><label style={fieldLabel}>Completion %</label><input defaultValue="68" style={{ ...inputBase, border: `1px solid ${colors.border}` }} /></div>
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 10 }}>
                   <div><label style={fieldLabel}>Total Floors</label><input defaultValue="12" style={{ ...inputBase, border: `1px solid ${colors.border}` }} /></div>
                   <div><label style={fieldLabel}>Total Units</label><input defaultValue="96" style={{ ...inputBase, border: `1px solid ${colors.border}` }} /></div>
                 </div>
@@ -333,7 +335,7 @@ export default function EditProject() {
 
               <div style={{ background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 12, padding: '16px 20px' }}>
                 <div style={cardLabel}>Location</div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 10, marginBottom: 12 }}>
                   <div><label style={fieldLabel}>City</label><div style={selectBox}>{city || '—'}{chevron}</div></div>
                   <div><label style={fieldLabel}>Area</label><input value={area} onChange={(e) => setArea(e.target.value)} style={{ ...inputBase, border: `1px solid ${colors.border}` }} /></div>
                 </div>
@@ -363,7 +365,7 @@ export default function EditProject() {
                       <button style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex' }}><svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg></button>
                     )}
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 10 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 10, marginBottom: 10 }}>
                     <div><label style={{ display: 'block', fontSize: 11, color: colors.textFaint, marginBottom: 3 }}>Size range (m²)</label><div style={{ fontSize: 13, color: colors.ink, fontWeight: 500 }}>{u.size}</div></div>
                     <div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 3 }}><label style={{ fontSize: 11, color: colors.textFaint }}>Price range</label><span style={{ fontSize: 9, color: colors.amber, background: colors.amberTint, border: `1px solid ${colors.amberTintBorder}`, borderRadius: 3, padding: '0 4px' }}>⚠ Major</span></div>
@@ -406,7 +408,7 @@ export default function EditProject() {
 
               <div style={{ background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 12, padding: '16px 20px', marginBottom: 12 }}>
                 <label style={{ display: 'block', fontSize: 12, fontWeight: 500, color: colors.textMuted, marginBottom: 10 }}>Amenities</label>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 8 }}>
                   {amenList.map((a) => {
                     const on = !!amenities[a]
                     return (
@@ -443,7 +445,7 @@ export default function EditProject() {
                 <div style={{ fontSize: 10, fontWeight: 600, color: colors.textFaint, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>Project Images</div>
                 <div style={{ fontSize: 12, color: colors.textFaint, marginBottom: 8 }}>8 images · drag to reorder</div>
                 <input ref={fileRef} type="file" accept="image/*" onChange={onPickImage} style={{ display: 'none' }} />
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginBottom: 12 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 8, marginBottom: 12 }}>
                   {images.map((img, idx) => {
                     const showCover = idx === 0 && imageUrl
                     return (
@@ -459,7 +461,7 @@ export default function EditProject() {
 
               <div style={{ background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 12, padding: '16px 20px', marginBottom: 12 }}>
                 <div style={{ fontSize: 10, fontWeight: 600, color: colors.textFaint, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>Master Plan</div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12, border: `1px solid ${colors.border}`, borderRadius: 8, padding: '10px 12px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, border: `1px solid ${colors.border}`, borderRadius: 8, padding: '10px 12px', flexWrap: 'wrap' }}>
                   <div style={{ width: 56, height: 56, borderRadius: 6, backgroundColor: colors.surfaceMuted, backgroundImage: hatch, flexShrink: 0 }} />
                   <div style={{ flex: 1 }}><div style={{ fontSize: 13, fontWeight: 500, color: colors.ink }}>master_plan.pdf</div><div style={{ fontSize: 11, color: colors.textFaint }}>Uploaded Jun 12, 2025 · 2.4 MB</div></div>
                   <button style={{ height: 30, padding: '0 12px', background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 7, fontSize: 11, color: colors.textMuted, fontFamily: 'inherit', cursor: 'pointer' }}>Replace</button>
@@ -470,7 +472,7 @@ export default function EditProject() {
               <div style={{ background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 12, padding: '16px 20px', marginBottom: 12 }}>
                 <div style={{ fontSize: 10, fontWeight: 600, color: colors.textFaint, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>Documents</div>
                 {documents.map((d, i) => (
-                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: `1px solid ${colors.surfaceMuted}` }}>
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: `1px solid ${colors.surfaceMuted}`, flexWrap: 'wrap' }}>
                     <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /></svg>
                     <span style={{ flex: 1, fontSize: 13, color: colors.ink }}>{d.name}</span>
                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, color: colors.greenDark }}><svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg>Verified</span>
@@ -605,7 +607,7 @@ export default function EditProject() {
 
       {/* nav bar */}
       {showNav && (
-        <div style={{ background: '#fff', borderTop: `1px solid ${colors.border}`, padding: '12px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ background: '#fff', borderTop: `1px solid ${colors.border}`, padding: '12px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
           <div style={{ width: 120 }}>
             {step > 1 && (
               <button onClick={() => go(Math.max(1, step - 1))} style={{ height: 34, padding: '0 14px', background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 8, fontSize: 12, fontWeight: 500, color: colors.textMuted, fontFamily: 'inherit', cursor: 'pointer' }}>← Previous</button>
@@ -621,7 +623,7 @@ export default function EditProject() {
       {/* discard modal */}
       {showDiscard && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 70, padding: 24 }}>
-          <div style={{ background: '#fff', borderRadius: 12, padding: 20, maxWidth: 380, width: '100%', boxShadow: '0 16px 48px rgba(0,0,0,0.2)' }}>
+          <div style={{ background: '#fff', borderRadius: 12, padding: 20, maxWidth: 380, width: '100%', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 16px 48px rgba(0,0,0,0.2)' }}>
             <div style={{ fontSize: 14, fontWeight: 600, color: colors.ink, marginBottom: 4 }}>Discard all changes?</div>
             <div style={{ fontSize: 13, color: colors.textMuted, lineHeight: 1.5, marginBottom: 14 }}>All unsaved changes will be lost. Your project will not be modified.</div>
             <div style={{ display: 'flex', gap: 10 }}>

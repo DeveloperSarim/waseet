@@ -26,7 +26,7 @@ export function AdminTopbar({ title, total, unit }) {
   return (
     <Topbar
       left={
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, minWidth: 0, overflow: 'hidden', whiteSpace: 'nowrap' }}>
           <span style={{ fontSize: 16, fontWeight: 700, letterSpacing: '-0.02em' }}>{title}</span>
           <span style={{ fontSize: 13, color: colors.textFaint }}>{total} total</span>
         </div>
@@ -34,7 +34,7 @@ export function AdminTopbar({ title, total, unit }) {
       notifications={5}
       avatar={<Avatar initials="SA" size={30} />}
       actions={
-        <button style={{ height: 34, padding: '0 14px', background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 7, fontSize: 12, color: colors.textMuted, fontFamily: 'inherit', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
+        <button className="wa-hide-sm" style={{ height: 34, padding: '0 14px', background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 7, fontSize: 12, color: colors.textMuted, fontFamily: 'inherit', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
           <Icon name="download" size={14} color={colors.textMuted} strokeWidth={1.8} />Export CSV
         </button>
       }
@@ -60,8 +60,8 @@ export function AdminTabs({ tabs, active, onChange }) {
 
 export function AdminSearchBar({ placeholder, filters = [] }) {
   return (
-    <div style={{ background: '#fff', borderBottom: `1px solid ${colors.border}`, padding: '10px 22px', display: 'flex', gap: 8, alignItems: 'center' }}>
-      <div style={{ flex: 1, maxWidth: 300, position: 'relative' }}>
+    <div style={{ background: '#fff', borderBottom: `1px solid ${colors.border}`, padding: '10px 22px', display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+      <div style={{ flex: 1, minWidth: 200, maxWidth: 300, position: 'relative' }}>
         <Icon name="search" size={14} color={colors.textFaint} strokeWidth={1.8} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)' }} />
         <input placeholder={placeholder} style={{ width: '100%', height: 34, border: `1px solid ${colors.border}`, borderRadius: 7, padding: '0 10px 0 32px', fontSize: 12, fontFamily: 'inherit' }} />
       </div>

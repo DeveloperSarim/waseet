@@ -96,14 +96,14 @@ export default function BankDetails({ embed = false }) {
       {!embed && (
         <Topbar
           left={
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span onClick={() => navigate('/realtor/profile')} style={{ fontSize: 13, color: colors.textFaint, cursor: 'pointer' }}>My Profile</span>
-              <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={colors.borderStrong} strokeWidth={2}><path d="M9 6l6 6-6 6" /></svg>
-              <span style={{ fontSize: 13, color: colors.ink, fontWeight: 500 }}>Bank Details</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
+              <span onClick={() => navigate('/realtor/profile')} style={{ fontSize: 13, color: colors.textFaint, cursor: 'pointer', whiteSpace: 'nowrap' }}>My Profile</span>
+              <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={colors.borderStrong} strokeWidth={2} style={{ flexShrink: 0 }}><path d="M9 6l6 6-6 6" /></svg>
+              <span style={{ fontSize: 13, color: colors.ink, fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Bank Details</span>
             </div>
           }
           actions={
-            <button onClick={() => navigate('/realtor/profile')} style={{ height: 34, padding: '0 14px', background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 7, fontSize: 12, color: colors.textMuted, fontFamily: 'inherit', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
+            <button className="wa-hide-sm" onClick={() => navigate('/realtor/profile')} style={{ height: 34, padding: '0 14px', background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 7, fontSize: 12, color: colors.textMuted, fontFamily: 'inherit', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
               <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth={2}><path d="M15 18l-6-6 6-6" /></svg>Back to Profile
             </button>
           }

@@ -80,9 +80,9 @@ export default function SavedProjects() {
     <>
       <Topbar
         left={
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-            <span style={{ fontSize: 16, fontWeight: 700, letterSpacing: '-0.02em' }}>Saved Projects</span>
-            <span style={{ fontSize: 13, color: colors.textFaint }}>{projects.length} saved</span>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, minWidth: 0 }}>
+            <span style={{ fontSize: 16, fontWeight: 700, letterSpacing: '-0.02em', whiteSpace: 'nowrap' }}>Saved Projects</span>
+            <span style={{ fontSize: 13, color: colors.textFaint, whiteSpace: 'nowrap' }}>{projects.length} saved</span>
           </div>
         }
         actions={
@@ -96,8 +96,8 @@ export default function SavedProjects() {
       />
 
       {/* FILTER BAR */}
-      <div style={{ background: '#fff', borderBottom: `1px solid ${colors.border}`, padding: '10px 22px', display: 'flex', gap: 8, alignItems: 'center' }}>
-        <div style={{ flex: 1, maxWidth: 260, position: 'relative' }}>
+      <div style={{ background: '#fff', borderBottom: `1px solid ${colors.border}`, padding: '10px 22px', display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+        <div style={{ flex: 1, maxWidth: 260, minWidth: 180, position: 'relative' }}>
           <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth={1.8} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)' }}>
             <circle cx="11" cy="11" r="8" />
             <path d="M21 21l-4.3-4.3" />
@@ -188,7 +188,8 @@ export default function SavedProjects() {
 
             {/* LIST VIEW */}
             {!isGrid && (
-              <div style={{ background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 12, overflow: 'hidden' }}>
+              <div className="wa-scroll-x">
+              <div style={{ background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 12, overflow: 'hidden', minWidth: 700 }}>
                 {cards.map((c) => (
                   <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '12px 16px', borderBottom: '1px solid #F3F4F6', minHeight: 60 }}>
                     <div style={{ width: 52, height: 38, borderRadius: 6, background: '#F3F4F6', backgroundImage: c.image ? undefined : 'repeating-linear-gradient(45deg, #E9EBEE 0, #E9EBEE 1px, transparent 1px, transparent 8px)', backgroundSize: 'cover', backgroundPosition: 'center', flexShrink: 0, ...(c.image ? { backgroundImage: `url(${c.image})` } : {}) }} />
@@ -211,6 +212,7 @@ export default function SavedProjects() {
                     </div>
                   </div>
                 ))}
+              </div>
               </div>
             )}
 

@@ -69,17 +69,17 @@ export default function AdminCommissions() {
     <>
       <Topbar
         left={
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, minWidth: 0, overflow: 'hidden', whiteSpace: 'nowrap' }}>
             <span style={{ fontSize: 16, fontWeight: 700, letterSpacing: '-0.02em' }}>Commissions</span>
             <span style={{ fontSize: 13, color: colors.textFaint }}>{(counts.all || 0)} total</span>
-            <span style={{ fontSize: 13, color: colors.textFaint }}>·</span>
-            <span style={{ fontSize: 13, color: colors.greenDark, fontWeight: 600 }}>{money(platformRevenue)} platform revenue</span>
+            <span className="wa-hide-sm" style={{ fontSize: 13, color: colors.textFaint }}>·</span>
+            <span className="wa-hide-sm" style={{ fontSize: 13, color: colors.greenDark, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis' }}>{money(platformRevenue)} platform revenue</span>
           </div>
         }
         notifications={5}
         avatar={<Avatar initials="SA" size={30} />}
         actions={
-          <button style={{ height: 34, padding: '0 14px', background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 7, fontSize: 12, color: colors.textMuted, fontFamily: 'inherit', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
+          <button className="wa-hide-sm" style={{ height: 34, padding: '0 14px', background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 7, fontSize: 12, color: colors.textMuted, fontFamily: 'inherit', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
             <Icon name="download" size={14} color={colors.textMuted} strokeWidth={1.8} />Export CSV
           </button>
         }
@@ -109,7 +109,8 @@ export default function AdminCommissions() {
           </div>
         )}
 
-        <div style={{ background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 12, overflow: 'hidden', margin: '16px 22px' }}>
+        <div className="wa-scroll-x" style={{ margin: '16px 22px' }}>
+        <div style={{ background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 12, overflow: 'hidden', minWidth: 720 }}>
           <div style={{ display: 'grid', gridTemplateColumns: grid, background: colors.bg, borderBottom: `1px solid ${colors.border}`, fontSize: 10, fontWeight: 600, color: colors.textFaint, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
             <span style={{ padding: '9px 16px' }}>Deal</span><span style={{ padding: '9px 8px' }}>Project</span><span style={{ padding: '9px 8px' }}>Realtor</span><span style={{ padding: '9px 8px' }}>Commission</span><span style={{ padding: '9px 8px' }}>Platform fee</span><span style={{ padding: '9px 8px' }}>Status</span>
           </div>
@@ -144,6 +145,7 @@ export default function AdminCommissions() {
               <div style={{ fontSize: 12, color: colors.textFaint, marginTop: 4 }}>Closed deals will appear here once commissions are generated.</div>
             </div>
           )}
+        </div>
         </div>
         <Pagination label={`Showing ${visible.length} of ${counts.all || 0} commissions`} />
       </div>

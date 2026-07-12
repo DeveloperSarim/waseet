@@ -13,7 +13,7 @@ const rLabel = { fontSize: 10, fontWeight: 600, color: colors.textFaint, textTra
 const fieldLabel = { fontSize: 10, color: colors.textFaint, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 2 }
 const btnGhost = { height: 34, padding: '0 14px', background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 7, fontSize: 12, color: colors.textMuted, fontFamily: 'inherit', cursor: 'pointer' }
 const modalShell = { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }
-const modalCardBase = { background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 12, padding: '18px 20px', width: '100%', boxShadow: '0 10px 30px rgba(0,0,0,0.12)' }
+const modalCardBase = { background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 12, padding: '18px 20px', width: '100%', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 10px 30px rgba(0,0,0,0.12)' }
 
 const DOC_LABEL = {
   PROFILE_PHOTO: 'Profile Photo', FAL_LICENSE: 'FAL License', NATIONAL_ID: 'National ID / Iqama',
@@ -190,7 +190,7 @@ export default function AdminRealtorReview() {
               <div style={{ ...sectionLabel, marginBottom: 8 }}>Documents</div>
               {docs.length === 0 && <div style={{ padding: '12px 0', fontSize: 12, color: colors.textFaint }}>No documents uploaded.</div>}
               {docs.map((doc) => (
-                <div key={doc.id} style={{ padding: '12px 0', borderBottom: `1px solid ${colors.surfaceMuted}`, display: 'flex', gap: 12, alignItems: 'center' }}>
+                <div key={doc.id} style={{ padding: '12px 0', borderBottom: `1px solid ${colors.surfaceMuted}`, display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
                   <div style={{ flex: 1, display: 'flex', gap: 10, alignItems: 'center' }}>
                     {doc.type === 'PROFILE_PHOTO' ? (
                       <img src={doc.url} alt="" style={{ width: 40, height: 40, borderRadius: 6, objectFit: 'cover', border: `1px solid ${colors.border}` }} />

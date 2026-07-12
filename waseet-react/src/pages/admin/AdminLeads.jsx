@@ -78,13 +78,13 @@ export default function AdminLeads() {
     <>
       <Topbar
         left={
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, minWidth: 0, overflow: 'hidden', whiteSpace: 'nowrap' }}>
             <span style={{ fontSize: 16, fontWeight: 700, letterSpacing: '-0.02em' }}>All Leads</span>
             <span style={{ fontSize: 13, color: colors.textFaint }}>{rows.length.toLocaleString()} total</span>
           </div>
         }
         actions={
-          <button onClick={doExport} style={{ height: 34, padding: '0 14px', background: exportDone ? colors.greenTint : '#fff', border: `1px solid ${exportDone ? colors.greenTintBorder : colors.border}`, borderRadius: 7, fontSize: 12, color: exportDone ? colors.greenDark : colors.textMuted, fontFamily: 'inherit', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
+          <button onClick={doExport} className="wa-hide-sm" style={{ height: 34, padding: '0 14px', background: exportDone ? colors.greenTint : '#fff', border: `1px solid ${exportDone ? colors.greenTintBorder : colors.border}`, borderRadius: 7, fontSize: 12, color: exportDone ? colors.greenDark : colors.textMuted, fontFamily: 'inherit', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
             <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={exportDone ? colors.greenDark : colors.textMuted} strokeWidth={1.8}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" /></svg>{exportLabel}
           </button>
         }
@@ -115,7 +115,8 @@ export default function AdminLeads() {
           </div>
         )}
 
-        <div style={{ background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 12, overflow: 'hidden', margin: '16px 22px' }}>
+        <div className="wa-scroll-x" style={{ margin: '16px 22px' }}>
+        <div style={{ background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 12, overflow: 'hidden', minWidth: 760 }}>
           {/* Table header */}
           <div style={{ background: colors.bg, borderBottom: `1px solid ${colors.border}`, padding: '10px 16px', display: 'flex', alignItems: 'center' }}>
             <span style={{ flex: colFlex.realtor, ...headCell }}>Realtor</span>
@@ -158,6 +159,7 @@ export default function AdminLeads() {
               <div style={{ fontSize: 12, color: colors.textFaint, marginTop: 4 }}>Leads submitted by realtors will appear here.</div>
             </div>
           )}
+        </div>
         </div>
 
         {/* Footer count */}

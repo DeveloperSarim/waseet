@@ -167,9 +167,9 @@ export default function RealtorBrowse() {
     <>
       <Topbar
         left={
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-            <span style={{ fontSize: 16, fontWeight: 700, letterSpacing: '-0.02em' }}>Browse Projects</span>
-            <span style={{ fontSize: 13, color: colors.textFaint }}>{projects.length} live</span>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, minWidth: 0 }}>
+            <span style={{ fontSize: 16, fontWeight: 700, letterSpacing: '-0.02em', whiteSpace: 'nowrap' }}>Browse Projects</span>
+            <span style={{ fontSize: 13, color: colors.textFaint, whiteSpace: 'nowrap' }}>{projects.length} live</span>
           </div>
         }
         notifications={3}
