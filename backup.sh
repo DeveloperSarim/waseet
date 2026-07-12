@@ -16,7 +16,7 @@ COMPOSE="docker compose"
 mkdir -p "$BACKUP_DIR"
 
 # read specific keys from .env WITHOUT sourcing it (values may contain spaces / < > etc.)
-env_get() { grep -E "^$1=" .env 2>/dev/null | head -1 | cut -d= -f2- | sed -e 's/^"//' -e 's/"$//'; }
+env_get() { grep -E "^$1=" .env 2>/dev/null | head -1 | cut -d= -f2- | sed -e 's/^"//' -e 's/"$//' || true; }
 PGUSER="$(env_get POSTGRES_USER)"; PGUSER="${PGUSER:-waseet}"
 PGDB="$(env_get POSTGRES_DB)"; PGDB="${PGDB:-waseet}"
 
@@ -42,20 +42,54 @@ create() {
   c_green "✅ Backup created: $out ($(du -h "$out" | cut -f1))"
 }
 
+# pretty "YYYY-MM-DD HH:MM:SS" from a waseet-backup-YYYYMMDD-HHMMSS.tar.gz filename
+human_ts() {
+  basename "$1" | sed -E 's/^waseet-backup-([0-9]{4})([0-9]{2})([0-9]{2})-([0-9]{2})([0-9]{2})([0-9]{2})\.tar\.gz$/\1-\2-\3 \4:\5:\6/'
+}
+
+# collect backups (newest first) into the global BACKUPS array
+collect() {
+  BACKUPS=()
+  local f
+  for f in $(ls -1t "$BACKUP_DIR"/waseet-backup-*.tar.gz 2>/dev/null || true); do BACKUPS+=("$f"); done
+}
+
 list() {
-  if ls "$BACKUP_DIR"/*.tar.gz >/dev/null 2>&1; then
-    ls -lh "$BACKUP_DIR"/*.tar.gz | awk '{print $9"  ("$5")"}'
-  else
-    echo "No backups yet in $BACKUP_DIR"
-  fi
+  collect
+  if [ ${#BACKUPS[@]} -eq 0 ]; then echo "No backups yet in $BACKUP_DIR"; return; fi
+  printf '%-4s %-21s %-8s %s\n' "  #" "WHEN" "SIZE" "FILE"
+  local i=1 f
+  for f in "${BACKUPS[@]}"; do
+    printf '  %-2s %-21s %-8s %s\n' "$i" "$(human_ts "$f")" "$(du -h "$f" | cut -f1)" "$(basename "$f")"
+    i=$((i+1))
+  done
+}
+
+# interactive picker → sets PICKED. $1 = the action word shown in the prompt.
+pick_backup() {
+  collect
+  if [ ${#BACKUPS[@]} -eq 0 ]; then c_red "No backups found in $BACKUP_DIR"; return 1; fi
+  echo "Which backup do you want to $1?"; echo
+  list
+  echo
+  printf "Enter the number to %s (or q to cancel): " "$1"; read -r choice
+  [ "$choice" = "q" ] || [ "$choice" = "Q" ] && return 1
+  case "$choice" in ''|*[!0-9]*) c_red "Please enter a number."; return 1 ;; esac
+  if [ "$choice" -lt 1 ] || [ "$choice" -gt ${#BACKUPS[@]} ]; then c_red "That number isn't in the list."; return 1; fi
+  PICKED="${BACKUPS[$((choice-1))]}"
+  return 0
 }
 
 restore() {
   local file="${1:-}"
-  [ -z "$file" ] && { c_red "Usage: ./backup.sh restore <backup-file.tar.gz>"; exit 1; }
+  if [ -z "$file" ]; then
+    pick_backup "restore" || { echo "Cancelled."; exit 0; }
+    file="$PICKED"
+  fi
   [ -f "$file" ] || { c_red "File not found: $file"; exit 1; }
 
-  c_red "⚠️  This will OVERWRITE the current database and storage with: $file"
+  c_red "⚠️  This will OVERWRITE the current database and storage with:"
+  echo  "    $(basename "$file")   ($(human_ts "$file"), $(du -h "$file" | cut -f1))"
   printf "Type 'yes' to continue: "; read -r ans
   [ "$ans" = "yes" ] || { echo "Aborted."; exit 0; }
 
@@ -78,9 +112,23 @@ restore() {
   c_green "✅ Restore complete."
 }
 
+delete() {
+  local file="${1:-}"
+  if [ -z "$file" ]; then
+    pick_backup "delete" || { echo "Cancelled."; exit 0; }
+    file="$PICKED"
+  fi
+  [ -f "$file" ] || { c_red "File not found: $file"; exit 1; }
+  c_red "Delete this backup permanently?"
+  echo  "    $(basename "$file")   ($(human_ts "$file"), $(du -h "$file" | cut -f1))"
+  printf "Type 'yes' to delete: "; read -r ans
+  [ "$ans" = "yes" ] && { rm -f "$file"; c_green "🗑️  Deleted."; } || echo "Aborted."
+}
+
 case "${1:-}" in
   create)  create ;;
   list)    list ;;
   restore) restore "${2:-}" ;;
-  *) echo "Usage: ./backup.sh {create|list|restore <file>}"; exit 1 ;;
+  delete)  delete "${2:-}" ;;
+  *) echo "Usage: ./backup.sh {create | list | restore [file] | delete [file]}"; echo "       (restore/delete with no file → pick from a numbered list)"; exit 1 ;;
 esac
