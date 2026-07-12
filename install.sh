@@ -88,13 +88,21 @@ done
 step "Generating secrets + .env…"
 PG_PASS=$(rand); REDIS_PASS=$(rand); S3_KEY=$(rand); S3_SECRET=$(rand)
 JWT_A=$(rand)$(rand); JWT_R=$(rand)$(rand); ENC_KEY=$(openssl rand -base64 32)
-# with a domain we serve HTTPS (secure cookies); without one it's plain HTTP by IP:port
-if [ -n "$DOMAIN" ]; then PUBLIC_URL="https://$DOMAIN"; COOKIE_SECURE=true; else PUBLIC_URL="http://localhost:$APP_PORT"; COOKIE_SECURE=false; fi
+# With a domain → HTTPS behind a reverse-proxy (bind loopback, secure cookies).
+# Without a domain → serve the app directly on the server's public IP:port.
+if [ -n "$DOMAIN" ]; then
+  PUBLIC_URL="https://$DOMAIN"; COOKIE_SECURE=true; BIND_ADDR=127.0.0.1
+else
+  SERVER_IP=$(curl -fsS4 https://api.ipify.org 2>/dev/null || hostname -I 2>/dev/null | awk '{print $1}')
+  SERVER_IP=${SERVER_IP:-YOUR_SERVER_IP}
+  PUBLIC_URL="http://$SERVER_IP:$APP_PORT"; COOKIE_SECURE=false; BIND_ADDR=0.0.0.0
+fi
 
 cat > .env <<EOF
 NODE_ENV=production
 PORT=19000
 APP_PORT=$APP_PORT
+BIND_ADDR=$BIND_ADDR
 APP_URL=$PUBLIC_URL
 CORS_ORIGIN=$PUBLIC_URL
 COOKIE_SECURE=$COOKIE_SECURE
@@ -191,6 +199,16 @@ EOF
   fi
 fi
 
+# ---- 6b. firewall for direct IP:port access (no domain / no proxy) ----------
+if [ -z "$DOMAIN" ]; then
+  step "Opening the firewall for port $APP_PORT…"
+  if command -v ufw >/dev/null 2>&1; then
+    $SUDO ufw allow "$APP_PORT"/tcp >/dev/null 2>&1 && ok "ufw: port $APP_PORT allowed" || warn "Could not update ufw automatically."
+  else
+    warn "No ufw detected — if the app isn't reachable, open port $APP_PORT in your VPS panel firewall."
+  fi
+fi
+
 # ---- 7. nightly backup cron --------------------------------------------------
 step "Scheduling automatic nightly backups…"
 CRON="/etc/cron.d/waseet-backup"
@@ -215,7 +233,8 @@ say "  ${DIM}Update:${N}  bash update.sh"
 say "  ${DIM}Backup:${N}  bash backup.sh create | list | restore <file>"
 if [ -z "$DOMAIN" ]; then
   say ""
-  warn "No domain connected — app is on http://<server-ip>:$APP_PORT (loopback only)."
-  say "  To add a domain later, re-run: ${B}bash install.sh${N}"
+  say "  🌐 App is live at ${B}$PUBLIC_URL${N} — open it in your browser."
+  warn "Plain HTTP (no SSL) — great for testing. For a real domain + HTTPS, re-run: ${B}bash install.sh${N}"
+  say "  ${DIM}If it doesn't load, also allow port $APP_PORT in your VPS panel firewall.${N}"
 fi
 printf '%s────────────────────────────────────────────────────────%s\n' "$G" "$N"
