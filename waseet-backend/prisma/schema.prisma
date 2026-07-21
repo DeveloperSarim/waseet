@@ -99,6 +99,7 @@ model Project {
   priceTo       Int?
   commissionPct Float         @default(3)
   status        ProjectStatus @default(LIVE)
+  featured      Boolean       @default(false) // shown in the marketplace "Featured" rail
   imageKey      String? // primary cover image key (public bucket)
   location      String?
   mapLink       String?
@@ -158,6 +159,7 @@ model Lead {
   clientEmail String?
   budget      String?
   status      LeadStatus @default(NEW)
+  statusHistory Json?     // [{ status, at }] — one entry per status transition
   notes       String?
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt

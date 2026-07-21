@@ -261,6 +261,10 @@ export default function CommissionDetail() {
   const [loadError, setLoadError] = useState('')
   const [status, setStatus] = useState('pending')
   const [dispute, setDispute] = useState(false)
+  const [disputeForm, setDisputeForm] = useState(false)
+  const [disputeReason, setDisputeReason] = useState('')
+  const [disputeErr, setDisputeErr] = useState('')
+  const [submittingDispute, setSubmittingDispute] = useState(false)
   const [download, setDownload] = useState('idle') // idle | loading | done
   const [showToast, setShowToast] = useState(false)
   const [toastMsg, setToastMsg] = useState('')
@@ -329,6 +333,16 @@ export default function CommissionDetail() {
     }, 500)
   }
 
+  const submitDispute = async () => {
+    if (submittingDispute || !commission) return
+    if (!disputeReason.trim()) { setDisputeErr('Please describe the issue.'); return }
+    setSubmittingDispute(true); setDisputeErr('')
+    try {
+      await realtorApi.createDispute({ commissionId: commission.id, leadId: commission.leadId, subject: disputeReason.trim().split('\n')[0].slice(0, 80), description: disputeReason.trim(), amount: commission.net })
+      setDisputeForm(false); setDispute(true); setDisputeReason('')
+    } catch (e) { setDisputeErr(e.message || 'Could not submit dispute') } finally { setSubmittingDispute(false) }
+  }
+
   const tabStyle = (on) => ({
     fontSize: 11,
     fontWeight: 500,
@@ -386,11 +400,11 @@ export default function CommissionDetail() {
   const dealDetails = [
     { label: 'Project', value: c.projectName || '—' },
     { label: 'Unit', value: c.unit || '—' },
-    { label: 'Client', value: '—' },
-    { label: 'Client phone', value: '—' },
-    { label: 'Sale price', value: '—' },
+    { label: 'Client', value: c.clientName || '—' },
+    { label: 'Client phone', value: c.clientPhone || '—' },
+    { label: 'Sale price', value: money(c.salePrice) },
     { label: 'Deal closed', value: joinedLabel(c.closedAt) },
-    { label: 'Lead submitted', value: '—' },
+    { label: 'Lead submitted', value: c.leadSubmittedAt ? joinedLabel(c.leadSubmittedAt) : '—' },
   ]
 
   let downloadBtnStyle = { height: 34, padding: '0 14px', borderRadius: 8, fontSize: 12, fontWeight: 500, fontFamily: 'inherit', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }
@@ -504,11 +518,11 @@ export default function CommissionDetail() {
                   </div>
                   <div style={{ padding: '10px 14px', borderBottom: `1px solid ${colors.surfaceMuted}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span style={{ fontSize: 13, color: colors.textMuted }}>Sale Price{c.unit ? ` (${c.unit})` : ''}</span>
-                    <span style={{ fontSize: 13, color: colors.textMuted }}>—</span>
+                    <span style={{ fontSize: 13, color: colors.textMuted }}>{money(c.salePrice)}</span>
                   </div>
                   <div style={{ padding: '10px 14px', borderBottom: `1px solid ${colors.surfaceMuted}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span style={{ fontSize: 13, color: colors.textMuted }}>Developer Commission Rate</span>
-                    <span style={{ fontSize: 13, color: colors.textMuted }}>—</span>
+                    <span style={{ fontSize: 13, color: colors.textMuted }}>3%</span>
                   </div>
                   <div style={{ padding: '10px 14px', borderBottom: `1px solid ${colors.surfaceMuted}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span style={{ fontSize: 13, color: colors.textMuted }}>Gross Commission</span>
@@ -559,12 +573,12 @@ export default function CommissionDetail() {
               <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
                 <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={colors.textFaint} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M3 21h18M3 10h18M5 6l7-3 7 3M4 10v11M20 10v11M9 14v3M15 14v3" /></svg>
                 <div>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: colors.ink, marginBottom: 2 }}>—</div>
-                  <div style={{ fontSize: 12, color: colors.textMuted, marginBottom: 2 }}>—</div>
-                  <div style={{ fontSize: 12, color: colors.textFaint }}>IBAN: —</div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: colors.ink, marginBottom: 2 }}>{user?.bankName || '—'}</div>
+                  <div style={{ fontSize: 12, color: colors.textMuted, marginBottom: 2 }}>{user?.fullName || '—'}</div>
+                  <div style={{ fontSize: 12, color: colors.textFaint }}>IBAN: {user?.iban || '—'}</div>
                 </div>
               </div>
-              <div onClick={() => navigate('/realtor/settings')} style={{ fontSize: 12, color: colors.greenDark, marginTop: 10, cursor: 'pointer', display: 'inline-block' }}>Update bank details →</div>
+              <div onClick={() => navigate('/realtor/bank')} style={{ fontSize: 12, color: colors.greenDark, marginTop: 10, cursor: 'pointer', display: 'inline-block' }}>Update bank details →</div>
             </div>
 
           </div>
@@ -580,7 +594,7 @@ export default function CommissionDetail() {
                 <div style={{ fontSize: 11, color: colors.textFaint, marginTop: 4 }}>(net after platform fee)</div>
               </div>
               <div style={{ background: colors.bg, border: `1px solid ${colors.surfaceMuted}`, borderRadius: 8, padding: '10px 12px', marginBottom: 12 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}><span style={{ fontSize: 11, color: colors.textFaint }}>Sale price:</span><span style={{ fontSize: 12, color: colors.textMuted }}>—</span></div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}><span style={{ fontSize: 11, color: colors.textFaint }}>Sale price:</span><span style={{ fontSize: 12, color: colors.textMuted }}>{money(c.salePrice)}</span></div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}><span style={{ fontSize: 11, color: colors.textFaint }}>Gross:</span><span style={{ fontSize: 12, color: colors.textMuted }}>{money(c.gross)}</span></div>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ fontSize: 11, color: colors.textFaint }}>Fee ({c.platformPct}%):</span><span style={{ fontSize: 12, color: colors.textMuted }}>− {money(fee)}</span></div>
                 <div style={{ height: 1, background: colors.border, margin: '8px 0' }} />
@@ -599,43 +613,57 @@ export default function CommissionDetail() {
             <div style={{ ...card, padding: '14px 16px', marginBottom: 12 }}>
               <div style={{ ...rLabel, marginBottom: 12 }}>Project</div>
               <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-                <div style={{ width: 56, height: 42, borderRadius: 7, backgroundColor: colors.surfaceMuted, backgroundImage: hatch, flexShrink: 0 }} />
+                {c.projectImage ? (
+                  <img src={c.projectImage} alt="" style={{ width: 56, height: 42, borderRadius: 7, objectFit: 'cover', border: `1px solid ${colors.border}`, flexShrink: 0 }} />
+                ) : (
+                  <div style={{ width: 56, height: 42, borderRadius: 7, backgroundColor: colors.surfaceMuted, backgroundImage: hatch, flexShrink: 0 }} />
+                )}
                 <div>
                   <div style={{ fontSize: 13, fontWeight: 600, color: colors.ink, marginBottom: 2 }}>{c.projectName || '—'}</div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 3 }}>
                     <svg width={11} height={11} viewBox="0 0 24 24" fill="none" stroke={colors.textFaint} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" /><circle cx="12" cy="10" r="3" /></svg>
-                    <span style={{ fontSize: 11, color: colors.textFaint }}>—</span>
+                    <span style={{ fontSize: 11, color: colors.textFaint }}>{c.developerName || '—'}</span>
                   </div>
                   <div style={{ fontSize: 11, color: colors.textMuted }}>{c.unit || '—'}</div>
                 </div>
               </div>
-              <div onClick={() => navigate('/realtor/browse')} style={{ fontSize: 12, color: colors.greenDark, marginTop: 10, cursor: 'pointer', display: 'inline-block' }}>View project →</div>
+              <div onClick={() => c.leadId ? navigate(`/realtor/leads/${c.leadId}`) : navigate('/realtor/browse')} style={{ fontSize: 12, color: colors.greenDark, marginTop: 10, cursor: 'pointer', display: 'inline-block' }}>View project →</div>
             </div>
 
             {/* LEAD QUICK VIEW */}
             <div style={{ ...card, padding: '14px 16px', marginBottom: 12 }}>
               <div style={{ ...rLabel, marginBottom: 12 }}>Lead</div>
               <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-                <div style={{ width: 36, height: 36, borderRadius: 999, background: colors.ink, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: '#fff', flexShrink: 0 }}>—</div>
+                <div style={{ width: 36, height: 36, borderRadius: 999, background: colors.ink, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: '#fff', flexShrink: 0 }}>{(c.clientName || '?').split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase()}</div>
                 <div>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: colors.ink, marginBottom: 2 }}>—</div>
-                  <div style={{ fontSize: 11, color: colors.textMuted, marginBottom: 2 }}>—</div>
-                  <div style={{ fontSize: 11, color: colors.textFaint }}>—</div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: colors.ink, marginBottom: 2 }}>{c.clientName || '—'}</div>
+                  <div style={{ fontSize: 11, color: colors.textMuted, marginBottom: 2 }}>{c.clientPhone || '—'}</div>
+                  <div style={{ fontSize: 11, color: colors.textFaint }}>{c.projectName || '—'}</div>
                 </div>
               </div>
               <div style={{ marginTop: 10 }}><span style={{ fontSize: 11, fontWeight: 600, color: colors.greenDark, background: colors.greenTint, border: `1px solid ${colors.greenTintBorder}`, borderRadius: 999, padding: '3px 10px' }}>Closed ✓</span></div>
-              <div onClick={() => navigate('/realtor/leads')} style={{ fontSize: 12, color: colors.greenDark, marginTop: 8, cursor: 'pointer', display: 'inline-block' }}>View lead details →</div>
+              {c.leadId && <div onClick={() => navigate(`/realtor/leads/${c.leadId}`)} style={{ fontSize: 12, color: colors.greenDark, marginTop: 8, cursor: 'pointer', display: 'inline-block' }}>View lead details →</div>}
             </div>
 
             {/* DISPUTE CARD */}
             <div style={{ ...card, padding: '14px 16px' }}>
               <div style={{ ...rLabel, marginBottom: 10 }}>Dispute</div>
-              {!dispute ? (
+              {!dispute && !disputeForm ? (
                 <div>
                   <div style={{ fontSize: 12, color: colors.textSoft, lineHeight: 1.6, marginBottom: 12 }}>If there's an issue with this commission, you can raise a dispute.</div>
-                  <button onClick={() => setDispute(true)} style={{ width: '100%', height: 34, background: '#fff', border: `1px solid ${colors.redTintBorder}`, borderRadius: 7, fontSize: 12, fontWeight: 500, color: colors.red, fontFamily: 'inherit', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                  <button onClick={() => { setDisputeErr(''); setDisputeForm(true) }} style={{ width: '100%', height: 34, background: '#fff', border: `1px solid ${colors.redTintBorder}`, borderRadius: 7, fontSize: 12, fontWeight: 500, color: colors.red, fontFamily: 'inherit', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
                     <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={colors.red} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" /><line x1="4" y1="22" x2="4" y2="15" /></svg>Raise Dispute
                   </button>
+                </div>
+              ) : disputeForm ? (
+                <div>
+                  <div style={{ fontSize: 11, color: colors.textFaint, marginBottom: 6 }}>Reason for dispute · {c.dealRef}</div>
+                  <textarea value={disputeReason} onChange={(e) => setDisputeReason(e.target.value)} placeholder="Describe the issue clearly…" style={{ width: '100%', height: 80, border: `1px solid ${colors.border}`, borderRadius: 7, padding: '8px 10px', fontSize: 12.5, fontFamily: 'inherit', resize: 'none' }} />
+                  {disputeErr && <div style={{ fontSize: 11, color: colors.red, marginTop: 4 }}>{disputeErr}</div>}
+                  <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                    <button onClick={() => { setDisputeForm(false); setDisputeReason('') }} disabled={submittingDispute} style={{ flex: 1, height: 32, background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 7, fontSize: 12, color: colors.textMuted, fontFamily: 'inherit', cursor: 'pointer' }}>Cancel</button>
+                    <button onClick={submitDispute} disabled={submittingDispute} style={{ flex: 1, height: 32, background: colors.red, border: 'none', borderRadius: 7, fontSize: 12, fontWeight: 600, color: '#fff', fontFamily: 'inherit', cursor: submittingDispute ? 'default' : 'pointer', opacity: submittingDispute ? 0.7 : 1 }}>{submittingDispute ? 'Submitting…' : 'Submit'}</button>
+                  </div>
                 </div>
               ) : (
                 <div style={{ background: colors.redTint, border: `1px solid ${colors.redTintBorder}`, borderRadius: 8, padding: 12, textAlign: 'center' }}>

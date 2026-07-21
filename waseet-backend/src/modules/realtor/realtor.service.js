@@ -3,6 +3,7 @@ import { s3, buckets } from '../../lib/s3.js'
 import { GetObjectCommand } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import { ApiError } from '../../middleware/error.js'
+import { raiseDispute, listMyDisputes } from '../../lib/disputes.js'
 import { resolveProjectMedia, imageUrl } from '../../lib/projectMedia.js'
 
 const projectView = async (p, savedIds) => ({
@@ -17,6 +18,7 @@ const projectView = async (p, savedIds) => ({
   priceTo: p.priceTo,
   commissionPct: p.commissionPct,
   status: p.status,
+  featured: p.featured,
   location: p.location,
   mapLink: p.mapLink,
   description: p.description,
@@ -128,7 +130,10 @@ const leadView = (l) => ({
   unit: l.unit,
   clientName: l.clientName,
   clientPhone: l.clientPhone,
+  clientEmail: l.clientEmail,
+  budget: l.budget,
   status: l.status,
+  statusHistory: l.statusHistory || null,
   notes: l.notes,
   createdAt: l.createdAt,
   updatedAt: l.updatedAt,
@@ -144,7 +149,9 @@ export async function listLeads(realtorId, { status } = {}) {
 export async function getLead(realtorId, id) {
   const l = await prisma.lead.findUnique({ where: { id } })
   if (!l || l.realtorId !== realtorId) throw new ApiError(404, 'Lead not found', 'NOT_FOUND')
-  return leadView(l)
+  const c = await prisma.commission.findUnique({ where: { leadId: id }, select: { id: true, status: true, gross: true, net: true, platformPct: true } })
+  const proj = l.projectId ? await prisma.project.findUnique({ where: { id: l.projectId }, select: { imageKey: true } }) : null
+  return { ...leadView(l), commission: c || null, projectImage: proj?.imageKey ? await imageUrl(proj.imageKey) : null }
 }
 
 // realtor submits a lead on a marketplace project → notifies the developer
@@ -153,6 +160,7 @@ export async function createLead(realtorId, { projectId, clientName, clientPhone
   const project = projectId ? await prisma.project.findUnique({ where: { id: projectId } }) : null
   if (projectId && !project) throw new ApiError(404, 'Project not found', 'NOT_FOUND')
   const realtor = await prisma.user.findUnique({ where: { id: realtorId } })
+  if (realtor?.role !== 'REALTOR') throw new ApiError(403, 'Only realtors can submit leads', 'REALTOR_ONLY')
   const lead = await prisma.lead.create({
     data: {
       realtorId, developerId: project?.developerId || null, projectId: project?.id || null,
@@ -160,6 +168,7 @@ export async function createLead(realtorId, { projectId, clientName, clientPhone
       realtorName: realtor.fullName, unit: unit || null, clientName: clientName.trim(),
       clientPhone: clientPhone || null, clientEmail: clientEmail || null, budget: budget || null, notes: notes || null,
       status: 'NEW',
+      statusHistory: [{ status: 'NEW', at: new Date().toISOString() }],
     },
   })
   if (project?.developerId) {
@@ -181,6 +190,7 @@ const commissionView = (c) => ({
   net: c.net,
   status: c.status,
   failureReason: c.failureReason,
+  leadId: c.leadId,
   createdAt: c.createdAt,
 })
 
@@ -206,9 +216,18 @@ export async function listCommissions(realtorId, { status } = {}) {
 }
 
 export async function getCommission(realtorId, id) {
-  const c = await prisma.commission.findUnique({ where: { id } })
+  const c = await prisma.commission.findUnique({ where: { id }, include: { lead: true } })
   if (!c || c.realtorId !== realtorId) throw new ApiError(404, 'Commission not found', 'NOT_FOUND')
-  return commissionView(c)
+  const proj = c.projectId ? await prisma.project.findUnique({ where: { id: c.projectId }, select: { imageKey: true } }) : null
+  // sale price ≈ gross / 3% (the developer's close price); the lead's budget is the client's original figure
+  return {
+    ...commissionView(c),
+    clientName: c.lead?.clientName || null,
+    clientPhone: c.lead?.clientPhone || null,
+    salePrice: c.gross ? Math.round(c.gross / 0.03) : null,
+    leadSubmittedAt: c.lead?.createdAt || null,
+    projectImage: proj?.imageKey ? await imageUrl(proj.imageKey) : null,
+  }
 }
 
 // ---- wallet + withdrawals -----------------------------------------------------
@@ -310,4 +329,12 @@ export async function dashboardSummary(realtorId) {
     stats: { leads: leads.length, deals, totalEarned, pending },
     activity,
   }
+}
+
+// ---- disputes -----------------------------------------------------------------
+export function createDispute(realtorId, body) {
+  return raiseDispute({ userId: realtorId, role: 'REALTOR', ...body })
+}
+export function listDisputes(realtorId) {
+  return listMyDisputes(realtorId)
 }

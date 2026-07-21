@@ -166,13 +166,33 @@ export default function ProjectDetail() {
   const unitRows = Array.isArray(det.units) && det.units.length ? det.units : null
   const amenityNames = Array.isArray(det.amenities) && det.amenities.length ? det.amenities : null
   const floorPlans = Array.isArray(project?.floorPlans) ? project.floorPlans : []
-  // Construction timeline + payment plan (real from details, else sensible defaults)
-  const DEFAULT_TIMELINE = [
-    { label: 'Planning', date: 'Q1 2024', state: 'done' },
-    { label: 'Foundation', date: 'Q3 2024', state: 'done' },
-    { label: 'Construction', date: 'In Progress', state: 'active' },
-    { label: 'Handover', date: det.handover || 'Q4 2027', state: 'todo' },
-  ]
+  // Development status drives the pill, timeline and completion when the developer
+  // hasn't authored a granular timeline. Ready projects have no handover date.
+  const constructionStatus = det.constructionStatus || 'Under Construction'
+  const isReady = constructionStatus === 'Ready'
+  const handoverLabel = isReady ? 'Delivered' : (det.handover || 'TBC')
+  const STATUS_TIMELINE = {
+    'Off-plan': [
+      { label: 'Planning', date: 'Off-plan', state: 'active' },
+      { label: 'Foundation', date: '', state: 'todo' },
+      { label: 'Construction', date: '', state: 'todo' },
+      { label: 'Handover', date: det.handover || 'TBC', state: 'todo' },
+    ],
+    'Under Construction': [
+      { label: 'Planning', date: 'Complete', state: 'done' },
+      { label: 'Foundation', date: 'Complete', state: 'done' },
+      { label: 'Construction', date: 'In Progress', state: 'active' },
+      { label: 'Handover', date: det.handover || 'TBC', state: 'todo' },
+    ],
+    Ready: [
+      { label: 'Planning', date: 'Complete', state: 'done' },
+      { label: 'Foundation', date: 'Complete', state: 'done' },
+      { label: 'Construction', date: 'Complete', state: 'done' },
+      { label: 'Handover', date: 'Delivered', state: 'done' },
+    ],
+  }
+  const STATUS_PCT = { 'Off-plan': 10, 'Under Construction': 50, Ready: 100 }
+  const DEFAULT_TIMELINE = STATUS_TIMELINE[constructionStatus] || STATUS_TIMELINE['Under Construction']
   const DEFAULT_PAYMENT = [
     { pct: 20, title: 'Down payment', sub: 'On signing' },
     { pct: 60, title: 'During construction', sub: 'Quarterly instalments' },
@@ -180,7 +200,7 @@ export default function ProjectDetail() {
   ]
   const timeline = Array.isArray(det.timeline) && det.timeline.length ? det.timeline : DEFAULT_TIMELINE
   const paymentPlan = Array.isArray(det.paymentPlan) && det.paymentPlan.length ? det.paymentPlan : DEFAULT_PAYMENT
-  const progressPercent = det.progressPercent != null ? det.progressPercent : 68
+  const progressPercent = det.progressPercent != null ? det.progressPercent : (STATUS_PCT[constructionStatus] ?? 50)
   const pctNum = (p) => Number(String(p.pct).replace('%', '')) || 0
   const _activeIdx = timeline.findIndex((t) => t.state === 'active')
   const _doneCount = timeline.filter((t) => t.state === 'done').length
@@ -327,7 +347,10 @@ export default function ProjectDetail() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap' }}>
               <h1 style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-0.02em', margin: 0 }}>{name}</h1>
               <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                <span style={{ background: '#FEF9EC', border: '1px solid #F3E2B8', borderRadius: 999, padding: '3px 10px', fontSize: 11, fontWeight: 600, color: '#92763A' }}>Under Construction</span>
+                {(() => {
+                  const s = isReady ? { bg: colors.greenTint, bd: colors.greenTintBorder, fg: colors.greenDark } : constructionStatus === 'Off-plan' ? { bg: '#EEF3FF', bd: '#BFDBFE', fg: '#1B4FD8' } : { bg: '#FEF9EC', bd: '#F3E2B8', fg: '#92763A' }
+                  return <span style={{ background: s.bg, border: `1px solid ${s.bd}`, borderRadius: 999, padding: '3px 10px', fontSize: 11, fontWeight: 600, color: s.fg }}>{constructionStatus}</span>
+                })()}
                 <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: colors.textFaint }}>
                   <Icon name="eye" size={12} color="currentColor" strokeWidth={2} />124 views
                 </span>
@@ -336,8 +359,10 @@ export default function ProjectDetail() {
             <div style={{ display: 'flex', gap: 16, marginTop: 10, flexWrap: 'wrap' }}>
               <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 13, color: colors.textMuted }}><Icon name="mapPin" size={14} color={colors.green} strokeWidth={1.9} />{location}{project?.country ? ` · ${countryName(project.country)}` : ''}</span>
               <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 13, color: colors.textMuted }}><Icon name="building" size={14} color={colors.textFaint} strokeWidth={1.8} />{developer} <Icon name="checkCircle" size={13} color={colors.green} strokeWidth={2} /></span>
-              <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 13, color: colors.textMuted }}><Icon name="calendar" size={14} color={colors.textFaint} strokeWidth={1.8} />Handover: Q4 2027</span>
-              <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 13, color: colors.textMuted }}><Icon name="layers" size={14} color={colors.textFaint} strokeWidth={1.8} />12 Floors · 96 Units</span>
+              <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 13, color: colors.textMuted }}><Icon name="calendar" size={14} color={colors.textFaint} strokeWidth={1.8} />{isReady ? 'Delivered — ready to move in' : `Handover: ${handoverLabel}`}</span>
+              {(det.floors != null || det.totalUnits != null) && (
+                <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 13, color: colors.textMuted }}><Icon name="layers" size={14} color={colors.textFaint} strokeWidth={1.8} />{[det.floors != null ? `${det.floors} Floors` : null, det.totalUnits != null ? `${det.totalUnits} Units` : null].filter(Boolean).join(' · ')}</span>
+              )}
             </div>
             <div style={{ marginTop: 14 }}>
               <div style={{ fontSize: 11, color: colors.textFaint }}>Launch price from:</div>
@@ -568,7 +593,12 @@ export default function ProjectDetail() {
 
           {/* Lead form */}
           <div style={{ background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 12, padding: 18 }} className="wa-form">
-            {!leadSubmitted ? (
+            {user?.role === 'DEVELOPER' ? (
+              <div style={{ textAlign: 'center', padding: '10px 4px' }}>
+                <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}>Viewing as a developer</div>
+                <div style={{ fontSize: 12.5, color: colors.textSoft, lineHeight: 1.6 }}>You can browse the marketplace, but lead submission is for realtors. Realtors submit client leads on your projects here.</div>
+              </div>
+            ) : !leadSubmitted ? (
               <>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
                   <span style={{ fontSize: 14, fontWeight: 600 }}>Submit a lead</span>

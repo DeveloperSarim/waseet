@@ -41,8 +41,14 @@ const tiers = [
   { emoji: '🥇', name: 'Gold', req: '3 deals closed', status: '🔒', statusColor: colors.textFaint },
   { emoji: '💎', name: 'Platinum', req: '10 deals closed', status: '🔒', statusColor: colors.textFaint },
 ]
-// Country column supports these three (see adminFormat).
-const COUNTRIES = [['SA', '🇸🇦 Saudi Arabia'], ['AE', '🇦🇪 UAE'], ['PK', '🇵🇰 Pakistan']]
+// Saudi-only platform.
+const COUNTRIES = [['SA', '🇸🇦 Saudi Arabia']]
+// Same option sets the registration form uses, so edit ⇄ register stay consistent.
+const LANG_NAMES = ['Arabic', 'English', 'Urdu', 'Hindi', 'French']
+const EXP_OPTIONS = ['Less than 1 year', '1–3 years', '3–5 years', '5–10 years', '10+ years']
+const LICENSE_TYPES = ['FAL License', 'REGA Certificate', 'Other']
+const ID_TYPES = ['Iqama / National ID', 'Passport', 'Other']
+const splitJoined = (s) => String(s || '').split('·').map((x) => x.trim()).filter(Boolean)
 
 const card = { background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 12, padding: '14px 18px' }
 const sectionLabel = { fontSize: 9, fontWeight: 700, color: colors.textFaint, textTransform: 'uppercase', letterSpacing: '0.08em' }
@@ -53,18 +59,30 @@ export default function RealtorProfile() {
   const { user, updateProfile } = useAuth() || {}
   const [editing, setEditing] = useState(false)
   const [toast, setToast] = useState(false)
-  const [form, setForm] = useState({ fullName: '', country: '', city: '', phone: '', agency: '', specialization: '', languages: '', experience: '' })
+  const [form, setForm] = useState({ fullName: '', country: '', city: '', phone: '', agency: '', specialization: '', languages: '', experience: '', licenseType: '', licenseNumber: '', licenseExpiry: '', idType: '', idNumber: '' })
   const [stats, setStats] = useState(null)
   const [documents, setDocuments] = useState([])
   const [previewDoc, setPreviewDoc] = useState(null)
+  const [docsOpen, setDocsOpen] = useState(false)
+  const [uploading, setUploading] = useState('')
 
   // Sync the edit form once the user loads / changes.
   useEffect(() => {
     if (user) setForm({
       fullName: user.fullName || '', country: user.country || '', city: user.city || '', phone: user.phone || '',
       agency: user.agency || '', specialization: user.specialization || '', languages: user.languages || '', experience: user.experience || '',
+      licenseType: user.licenseType || '', licenseNumber: user.licenseNumber || '', licenseExpiry: user.licenseExpiry || '',
+      idType: user.idType || '', idNumber: user.idNumber || '',
     })
   }, [user])
+
+  // Upload / replace a KYC document, then refresh the list.
+  const refreshDocs = () => documentsApi.list().then((docs) => setDocuments(docs || [])).catch(() => {})
+  const onUploadDoc = async (type, file) => {
+    if (!file) return
+    setUploading(type)
+    try { await documentsApi.upload(type, file); await refreshDocs() } catch (e) { /* keep panel open */ } finally { setUploading('') }
+  }
 
   // Pull live hero stats + stored documents.
   useEffect(() => {
@@ -105,8 +123,15 @@ export default function RealtorProfile() {
   // Edit grid: every field here maps to a real column.
   const editFields = [
     { label: 'Full Name', key: 'fullName' }, { label: 'Country', key: 'country', country: true }, { label: 'City', key: 'city' }, { label: 'Agency', key: 'agency' },
-    { label: 'Specialization', key: 'specialization' }, { label: 'Languages', key: 'languages' }, { label: 'Experience', key: 'experience' }, { label: 'WhatsApp', key: 'phone' },
+    { label: 'Specialization', key: 'specialization' }, { label: 'Languages', key: 'languages', multi: LANG_NAMES }, { label: 'Experience', key: 'experience', select: EXP_OPTIONS }, { label: 'WhatsApp', key: 'phone' },
   ]
+
+  // toggle a value inside a "·"-joined multi-select string (Languages)
+  const toggleMulti = (key, val) => setForm((f) => {
+    const cur = splitJoined(f[key])
+    const next = cur.includes(val) ? cur.filter((x) => x !== val) : [...cur, val]
+    return { ...f, [key]: next.join(' · ') }
+  })
 
   const save = async () => {
     try {
@@ -119,6 +144,11 @@ export default function RealtorProfile() {
         specialization: form.specialization,
         languages: form.languages,
         experience: form.experience,
+        licenseType: form.licenseType,
+        licenseNumber: form.licenseNumber,
+        licenseExpiry: form.licenseExpiry,
+        idType: form.idType,
+        idNumber: form.idNumber,
       })
       setEditing(false)
       setToast(true)
@@ -216,8 +246,22 @@ export default function RealtorProfile() {
                           <option value="">—</option>
                           {COUNTRIES.map(([code, name]) => <option key={code} value={code}>{name}</option>)}
                         </select>
-                      ) : f.readOnly ? (
-                        <input disabled value="—" style={{ width: '100%', height: 34, border: `1px solid ${colors.border}`, borderRadius: 7, padding: '0 10px', fontSize: 13, fontFamily: 'inherit', background: colors.surfaceAlt, color: colors.textFaint }} />
+                      ) : f.multi ? (
+                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', padding: '4px 0' }}>
+                          {f.multi.map((opt) => {
+                            const on = splitJoined(form[f.key]).includes(opt)
+                            return (
+                              <span key={opt} onClick={() => toggleMulti(f.key, opt)} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 11px', borderRadius: 999, fontSize: 12, cursor: 'pointer', border: `1px solid ${on ? colors.green : colors.border}`, background: on ? colors.greenTint : '#fff', color: on ? colors.greenDark : colors.textMuted, fontWeight: on ? 600 : 400 }}>
+                                {on && <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke={colors.green} strokeWidth={2.6}><path d="M20 6L9 17l-5-5" /></svg>}{opt}
+                              </span>
+                            )
+                          })}
+                        </div>
+                      ) : f.select ? (
+                        <select value={form[f.key]} onChange={(e) => setForm({ ...form, [f.key]: e.target.value })} style={{ width: '100%', height: 34, border: `1px solid ${colors.border}`, borderRadius: 7, padding: '0 10px', fontSize: 13, fontFamily: 'inherit', background: '#fff', color: colors.ink }}>
+                          <option value="">Select</option>
+                          {f.select.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
+                        </select>
                       ) : (
                         <input value={form[f.key]} onChange={(e) => setForm({ ...form, [f.key]: e.target.value })} style={{ width: '100%', height: 34, border: `1px solid ${colors.border}`, borderRadius: 7, padding: '0 10px', fontSize: 13, fontFamily: 'inherit', background: '#fff', color: colors.ink }} />
                       )}
@@ -231,29 +275,76 @@ export default function RealtorProfile() {
             <div style={card}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
                 <span style={sectionLabel}>License &amp; Verification</span>
-                <span style={{ fontSize: 12, color: colors.greenDark, cursor: 'pointer' }}>Update Docs</span>
+                <span onClick={() => setDocsOpen((o) => !o)} style={{ fontSize: 12, color: colors.greenDark, cursor: 'pointer' }}>{docsOpen ? 'Close' : 'Update Docs'}</span>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px 16px' }}>
-                {license.map(([label, value]) => (
-                  <div key={label}>
-                    <div style={{ fontSize: 10, color: colors.textFaint, textTransform: 'uppercase', marginBottom: 2 }}>{label}</div>
-                    <div style={{ fontSize: 13, color: colors.textMuted }}>{value}</div>
+              {!editing ? (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px 16px' }}>
+                  {license.map(([label, value]) => (
+                    <div key={label}>
+                      <div style={{ fontSize: 10, color: colors.textFaint, textTransform: 'uppercase', marginBottom: 2 }}>{label}</div>
+                      <div style={{ fontSize: 13, color: colors.textMuted }}>{value}</div>
+                    </div>
+                  ))}
+                  <div>
+                    <div style={{ fontSize: 10, color: colors.textFaint, textTransform: 'uppercase', marginBottom: 2 }}>Expiry</div>
+                    <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                      <span style={{ fontSize: 13, color: colors.textMuted }}>{expiryLabel(user?.licenseExpiry)}</span>
+                      {user?.licenseExpiry && <span style={{ fontSize: 11, color: colors.greenDark, background: colors.greenTint, border: `1px solid ${colors.greenTintBorder}`, borderRadius: 999, padding: '1px 7px' }}>Valid ✓</span>}
+                    </div>
                   </div>
-                ))}
-                <div>
-                  <div style={{ fontSize: 10, color: colors.textFaint, textTransform: 'uppercase', marginBottom: 2 }}>Expiry</div>
-                  <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                    <span style={{ fontSize: 13, color: colors.textMuted }}>{expiryLabel(user?.licenseExpiry)}</span>
-                    <span style={{ fontSize: 11, color: colors.greenDark, background: colors.greenTint, border: `1px solid ${colors.greenTintBorder}`, borderRadius: 999, padding: '1px 7px' }}>Valid ✓</span>
+                  <div>
+                    <div style={{ fontSize: 10, color: colors.textFaint, textTransform: 'uppercase', marginBottom: 2 }}>Verification</div>
+                    <div style={{ fontSize: 13, color: colors.green }}>Verified by Waseet ✓</div>
                   </div>
                 </div>
-                <div>
-                  <div style={{ fontSize: 10, color: colors.textFaint, textTransform: 'uppercase', marginBottom: 2 }}>Verification</div>
-                  <div style={{ fontSize: 13, color: colors.green }}>Verified by Waseet ✓</div>
+              ) : (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px 16px' }}>
+                  <div>
+                    <div style={{ fontSize: 12, fontWeight: 500, color: colors.textMuted, marginBottom: 4 }}>License Type</div>
+                    <select value={form.licenseType} onChange={(e) => setForm({ ...form, licenseType: e.target.value })} style={{ width: '100%', height: 34, border: `1px solid ${colors.border}`, borderRadius: 7, padding: '0 10px', fontSize: 13, fontFamily: 'inherit', background: '#fff', color: colors.ink }}>
+                      <option value="">Select</option>
+                      {LICENSE_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 12, fontWeight: 500, color: colors.textMuted, marginBottom: 4 }}>License Number</div>
+                    <input value={form.licenseNumber} onChange={(e) => setForm({ ...form, licenseNumber: e.target.value })} placeholder="FAL-XXXX-XXXXX" style={{ width: '100%', height: 34, border: `1px solid ${colors.border}`, borderRadius: 7, padding: '0 10px', fontSize: 13, fontFamily: 'inherit' }} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 12, fontWeight: 500, color: colors.textMuted, marginBottom: 4 }}>ID Type</div>
+                    <select value={form.idType} onChange={(e) => setForm({ ...form, idType: e.target.value })} style={{ width: '100%', height: 34, border: `1px solid ${colors.border}`, borderRadius: 7, padding: '0 10px', fontSize: 13, fontFamily: 'inherit', background: '#fff', color: colors.ink }}>
+                      <option value="">Select</option>
+                      {ID_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 12, fontWeight: 500, color: colors.textMuted, marginBottom: 4 }}>ID Number</div>
+                    <input value={form.idNumber} onChange={(e) => setForm({ ...form, idNumber: e.target.value })} placeholder="1XXXXXXXXX" style={{ width: '100%', height: 34, border: `1px solid ${colors.border}`, borderRadius: 7, padding: '0 10px', fontSize: 13, fontFamily: 'inherit' }} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 12, fontWeight: 500, color: colors.textMuted, marginBottom: 4 }}>License Expiry</div>
+                    <input type="date" value={form.licenseExpiry} onChange={(e) => setForm({ ...form, licenseExpiry: e.target.value })} style={{ width: '100%', height: 34, border: `1px solid ${colors.border}`, borderRadius: 7, padding: '0 10px', fontSize: 13, fontFamily: 'inherit' }} />
+                  </div>
                 </div>
-              </div>
+              )}
               <div style={{ marginTop: 12, paddingTop: 12, borderTop: `1px solid ${colors.surfaceMuted}` }}>
                 <div style={{ fontSize: 12, fontWeight: 600, color: colors.textMuted, marginBottom: 8 }}>Documents</div>
+                {docsOpen && (
+                  <div style={{ background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 8, padding: 12, marginBottom: 10 }}>
+                    <div style={{ fontSize: 11, color: colors.textFaint, marginBottom: 8 }}>Upload or replace a document (PDF, JPG or PNG). New uploads are re-verified by Waseet.</div>
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                      {[['FAL_LICENSE', 'FAL License'], ['NATIONAL_ID', 'Iqama / National ID']].map(([type, label]) => (
+                        <label key={type} style={{ flex: '1 1 180px', minWidth: 160, cursor: uploading ? 'default' : 'pointer' }}>
+                          <input type="file" accept="image/*,application/pdf" style={{ display: 'none' }} disabled={!!uploading} onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; onUploadDoc(type, f) }} />
+                          <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, height: 38, border: `1px dashed ${colors.borderStrong}`, borderRadius: 8, fontSize: 12, color: colors.textMuted, background: '#fff' }}>
+                            <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={colors.textFaint} strokeWidth={1.8}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5-5 5 5M12 5v12" /></svg>
+                            {uploading === type ? 'Uploading…' : `Upload ${label}`}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 {documents.length === 0 ? (
                   <div style={{ fontSize: 12, color: colors.textFaint, padding: '8px 0' }}>No documents uploaded yet</div>
                 ) : documents.map((d) => {

@@ -22,7 +22,7 @@ const phoneMeta = { 'Saudi Arabia': { flag: '🇸🇦', code: '+966' }, UAE: { f
 
 export default function DeveloperRegistration() {
   const navigate = useNavigate()
-  const [form, setForm] = useState({ companyName: '', country: 'Saudi Arabia', city: '', contactName: '', email: '', phone: '' })
+  const [form, setForm] = useState({ companyName: '', country: 'Saudi Arabia', city: '', contactName: '', email: '', phone: '', regaNo: '', tradeLicenseNo: '', website: '', years: '', designation: '' })
   const [tradeLicense, setTradeLicense] = useState(null)
   const [companyProfile, setCompanyProfile] = useState(null)
   const [logo, setLogo] = useState(null) // { key, url }
@@ -65,6 +65,9 @@ export default function DeveloperRegistration() {
 
     setLoading(true)
     try {
+      // combine REGA + CR into the trade-license field the admin displays
+      const licenseNumber = [form.regaNo.trim() && `REGA ${form.regaNo.trim()}`, form.tradeLicenseNo.trim() && `CR ${form.tradeLicenseNo.trim()}`].filter(Boolean).join(' · ') || undefined
+      const contactName = form.designation.trim() ? `${form.contactName.trim()} — ${form.designation.trim()}` : form.contactName.trim()
       const res = await authApi.registerDeveloper({
         email: form.email.trim(),
         fullName: form.companyName.trim(),
@@ -72,6 +75,10 @@ export default function DeveloperRegistration() {
         country: countryMap[form.country],
         city: form.city.trim(),
         avatarKey: logo?.key,
+        contactName,
+        website: form.website.trim() || undefined,
+        licenseNumber,
+        experience: form.years && form.years !== 'Select' ? form.years : undefined,
       })
       setAccessToken(res.accessToken)
       await documentsApi.upload('TRADE_LICENSE', tradeLicense)
@@ -164,7 +171,7 @@ export default function DeveloperRegistration() {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
             <div>
               <Label>Country *</Label>
-              <SelectInput value={form.country} onChange={set('country')}><option>Saudi Arabia</option><option>UAE</option><option>Pakistan</option></SelectInput>
+              <SelectInput value={form.country} onChange={set('country')}><option>Saudi Arabia</option></SelectInput>
             </div>
             <div>
               <Label>City *</Label>
@@ -173,21 +180,21 @@ export default function DeveloperRegistration() {
           </div>
           <div style={{ marginBottom: 12 }}>
             <Label icon="info">REGA License Number *</Label>
-            <TextInput placeholder="REGA-2024-12345" />
+            <TextInput value={form.regaNo} onChange={set('regaNo')} placeholder="REGA-2024-12345" />
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
             <div>
               <Label>CR / Trade License *</Label>
-              <TextInput placeholder="1234567890" />
+              <TextInput value={form.tradeLicenseNo} onChange={set('tradeLicenseNo')} placeholder="1234567890" />
             </div>
             <div>
               <Label>Website (optional)</Label>
-              <TextInput placeholder="https://company.com" />
+              <TextInput value={form.website} onChange={set('website')} placeholder="https://company.com" />
             </div>
           </div>
           <div>
             <Label>Years in Business</Label>
-            <SelectInput defaultValue="Select"><option>Select</option><option>Less than 1 year</option><option>1–3 years</option><option>3–5 years</option><option>5–10 years</option><option>10+ years</option></SelectInput>
+            <SelectInput value={form.years} onChange={set('years')}><option>Select</option><option>Less than 1 year</option><option>1–3 years</option><option>3–5 years</option><option>5–10 years</option><option>10+ years</option></SelectInput>
           </div>
         </Section>
 
@@ -200,7 +207,7 @@ export default function DeveloperRegistration() {
             </div>
             <div>
               <Label>Designation *</Label>
-              <TextInput placeholder="Sales Director" />
+              <TextInput value={form.designation} onChange={set('designation')} placeholder="Sales Director" />
             </div>
           </div>
           <div style={{ marginBottom: 12 }}>

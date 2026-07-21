@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { colors } from '../../theme/tokens'
 import { Topbar } from '../../components/layout/Topbar'
 import { adminApi } from '../../lib/api'
@@ -44,6 +45,7 @@ const headCell = { fontSize: 10, fontWeight: 600, color: colors.textFaint, textT
 const dateInput = { height: 34, width: 110, border: `1px solid ${colors.border}`, borderRadius: 7, padding: '0 10px', fontSize: 12, fontFamily: 'inherit' }
 
 export default function AdminLeads() {
+  const navigate = useNavigate()
   const [rows, setRows] = useState([])
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
@@ -129,7 +131,7 @@ export default function AdminLeads() {
           </div>
           {/* Rows */}
           {rows.map((r, i) => (
-            <div key={r.id} style={{ borderBottom: `1px solid ${colors.surfaceMuted}`, padding: '12px 16px', display: 'flex', alignItems: 'center', minHeight: 56 }}>
+            <div key={r.id} onClick={() => navigate(`/admin/leads/${r.id}`)} style={{ borderBottom: `1px solid ${colors.surfaceMuted}`, padding: '12px 16px', display: 'flex', alignItems: 'center', minHeight: 56, cursor: 'pointer' }}>
               <div style={{ flex: colFlex.realtor, display: 'flex', gap: 8, alignItems: 'center' }}>
                 <div style={{ width: 26, height: 26, borderRadius: '50%', background: colors.surfaceMuted, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: 600, color: colors.textMuted }}>{r.initials}</div>
                 <div><div style={{ fontSize: 13, fontWeight: 500 }}>{r.realtor}</div></div>

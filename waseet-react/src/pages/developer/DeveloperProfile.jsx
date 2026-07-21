@@ -2,8 +2,26 @@ import React, { useState, useRef, useEffect } from 'react'
 import { colors } from '../../theme/tokens'
 import { Topbar } from '../../components/layout/Topbar'
 import { useAuth } from '../../context/AuthContext'
-import { authApi } from '../../lib/api'
+import { authApi, documentsApi } from '../../lib/api'
 import { countryName, joinedLabel, initials } from '../../lib/adminFormat'
+import { DocPreviewModal } from '../../components/DocPreviewModal'
+
+const DOC_NAMES = { TRADE_LICENSE: 'Trade License / CR Certificate', REGA_CERTIFICATE: 'REGA License', FAL_LICENSE: 'FAL License', NATIONAL_ID: 'Iqama / National ID', PROFILE_PHOTO: 'Company Logo', OTHER: 'Company Document' }
+// licenseNumber stores "REGA <x> · CR <y>" — pull the pieces back out for display
+const parseLicense = (s) => {
+  const out = { rega: '', cr: '' }
+  for (const part of String(s || '').split('·').map((x) => x.trim())) {
+    if (/^rega/i.test(part)) out.rega = part.replace(/^rega\s*/i, '').trim()
+    else if (/^cr/i.test(part)) out.cr = part.replace(/^cr\s*/i, '').trim()
+    else if (part && !out.rega) out.rega = part
+  }
+  return out
+}
+// contactName stores "Name — Designation"
+const parseContact = (s) => {
+  const [name, ...rest] = String(s || '').split('—')
+  return { name: (name || '').trim(), designation: rest.join('—').trim() }
+}
 
 // Icon paths for the hero info pills. Labels are filled in from the real user.
 const pinIcon = 'M12 22s6-5.5 6-11a6 6 0 1 0-12 0c0 5.5 6 11 6 11z'
@@ -21,11 +39,6 @@ const heroStats = [
 
 const verifiedBadge = { display: 'inline-block', background: colors.greenTint, border: `1px solid ${colors.greenTintBorder}`, color: colors.greenDark, borderRadius: 999, padding: '2px 8px', fontSize: 10, fontWeight: 600, whiteSpace: 'nowrap' }
 const pendingBadge = { display: 'inline-block', background: '#FEF9EC', border: '1px solid #F3E2B8', color: colors.amberText, borderRadius: 999, padding: '2px 8px', fontSize: 10, fontWeight: 600, whiteSpace: 'nowrap' }
-const docs = [
-  { name: 'Trade License / CR Certificate', meta: 'Uploaded June 24 · 2.4MB', badge: 'Verified ✓', badgeStyle: verifiedBadge },
-  { name: 'REGA License', meta: 'Uploaded June 24 · 1.8MB', badge: 'Verified ✓', badgeStyle: verifiedBadge },
-  { name: 'Company Profile', meta: 'Uploaded June 26 · 4.1MB', badge: 'Pending', badgeStyle: pendingBadge },
-]
 
 const check = 'M20 6L9 17l-5-5'
 const clock = 'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zM12 7v5l3 2'
@@ -54,34 +67,52 @@ export default function DeveloperProfile() {
   const fileInputRef = useRef(null)
   const timers = useRef([])
 
+  const [documents, setDocuments] = useState([])
+  const [previewDoc, setPreviewDoc] = useState(null)
+  const [docUploading, setDocUploading] = useState('')
+
   // Editable company fields (only those with backend columns). Sync when user loads.
-  const [form, setForm] = useState({ companyName: '', city: '', website: '' })
+  const [form, setForm] = useState({ companyName: '', city: '', website: '', contactName: '', designation: '', experience: '' })
   useEffect(() => {
+    const c = parseContact(user?.contactName)
     setForm({
       companyName: user?.companyName || user?.fullName || '',
       city: user?.city || '',
       website: user?.website || '',
+      contactName: c.name,
+      designation: c.designation,
+      experience: user?.experience || '',
     })
   }, [user])
+
+  const refreshDocs = () => documentsApi.list().then((d) => setDocuments(d || [])).catch(() => {})
+  useEffect(() => { refreshDocs() }, [])
+  const onReplaceDoc = async (type, file) => {
+    if (!file) return
+    setDocUploading(type)
+    try { await documentsApi.upload(type, file); await refreshDocs() } catch (e) { /* keep */ } finally { setDocUploading('') }
+  }
+
+  const lic = parseLicense(user?.licenseNumber)
+  const contact = parseContact(user?.contactName)
 
   const companyName = user?.companyName || user?.fullName || '—'
   const locationLabel = user?.city ? `${user.city}, ${countryName(user?.country)}` : countryName(user?.country)
 
   const infoPills = [
     { d: pinIcon, label: locationLabel },
-    { d: bldgIcon, label: 'Est. 2015' },
     { d: bagIcon, label: 'Real Estate Developer' },
     { d: globeIcon, label: user?.website || '—' },
   ]
 
   const companyInfo = [
     { label: 'Company Name', value: companyName }, { label: 'Country', value: countryName(user?.country) },
-    { label: 'City', value: user?.city || '—' }, { label: 'REGA License', value: 'REGA-2024-12345' },
-    { label: 'CR Number', value: '1234567890' }, { label: 'Years in Business', value: '—' },
+    { label: 'City', value: user?.city || '—' }, { label: 'REGA License', value: lic.rega || '—' },
+    { label: 'CR Number', value: lic.cr || '—' }, { label: 'Years in Business', value: user?.experience || '—' },
     { label: 'Website', value: user?.website || '—' }, { label: 'Approved', value: joinedLabel(user?.createdAt) },
   ]
   const contactInfo = [
-    { label: 'Name', value: user?.contactName || '—' }, { label: 'Designation', value: '—' },
+    { label: 'Name', value: contact.name || '—' }, { label: 'Designation', value: contact.designation || '—' },
     { label: 'Phone', value: user?.phone || '—' }, { label: 'Email', value: user?.email || '—' },
     { label: 'WhatsApp', value: user?.phone || '—' },
   ]
@@ -109,7 +140,8 @@ export default function DeveloperProfile() {
   const saveEdit = async () => {
     setSaving(true)
     try {
-      await updateProfile?.({ companyName: form.companyName, city: form.city, website: form.website })
+      const contactName = form.designation.trim() ? `${form.contactName.trim()} — ${form.designation.trim()}` : form.contactName.trim()
+      await updateProfile?.({ companyName: form.companyName, city: form.city, website: form.website, contactName, experience: form.experience || undefined })
       setSaving(false); setEditing(false); setSavedToast(true)
       timers.current.push(setTimeout(() => setSavedToast(false), 4000))
     } catch {
@@ -182,9 +214,15 @@ export default function DeveloperProfile() {
                   <div><div style={editLabel}>Company Name</div><input value={form.companyName} onChange={setField('companyName')} style={editInput} /></div>
                   <div><div style={editLabel}>Country</div><input value={countryName(user?.country)} disabled style={editInputDisabled} /><div style={{ fontSize: 10, color: colors.textFaint, marginTop: 3 }}>Contact support to change</div></div>
                   <div><div style={editLabel}>City</div><input value={form.city} onChange={setField('city')} style={editInput} /></div>
-                  <div><div style={editLabel}>REGA License</div><input defaultValue="REGA-2024-12345" disabled style={editInputDisabled} /><div style={{ fontSize: 10, color: colors.textFaint, marginTop: 3 }}>Locked</div></div>
-                  <div><div style={editLabel}>CR Number</div><input defaultValue="1234567890" disabled style={editInputDisabled} /><div style={{ fontSize: 10, color: colors.textFaint, marginTop: 3 }}>Locked</div></div>
+                  <div><div style={editLabel}>REGA License</div><input value={lic.rega || '—'} disabled style={editInputDisabled} /><div style={{ fontSize: 10, color: colors.textFaint, marginTop: 3 }}>Locked</div></div>
+                  <div><div style={editLabel}>CR Number</div><input value={lic.cr || '—'} disabled style={editInputDisabled} /><div style={{ fontSize: 10, color: colors.textFaint, marginTop: 3 }}>Locked</div></div>
                   <div><div style={editLabel}>Website</div><input value={form.website} onChange={setField('website')} style={editInput} /></div>
+                  <div><div style={editLabel}>Years in Business</div>
+                    <select value={form.experience} onChange={setField('experience')} style={{ ...editInput, background: '#fff' }}>
+                      <option value="">Select</option>
+                      {['Less than 1 year', '1–3 years', '3–5 years', '5–10 years', '10+ years'].map((o) => <option key={o} value={o}>{o}</option>)}
+                    </select>
+                  </div>
                   <div style={{ gridColumn: 'span 2' }}><div style={{ fontSize: 11, color: colors.textFaint }}>Contact support@waseet.io to change locked fields.</div></div>
                 </div>
               )}
@@ -193,17 +231,42 @@ export default function DeveloperProfile() {
             {/* CONTACT */}
             <div style={{ background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 12, padding: '14px 18px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}><span style={sectionLabel}>Contact Person</span>{!editing && <span onClick={startEdit} style={{ fontSize: 12, color: colors.greenDark, cursor: 'pointer' }}>Edit ✏️</span>}</div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px 16px' }}>
-                {contactInfo.map((f, i) => <div key={i}><div style={{ fontSize: 10, color: colors.textFaint, textTransform: 'uppercase', marginBottom: 2 }}>{f.label}</div><div style={{ fontSize: 13, color: colors.textMuted }}>{f.value}</div></div>)}
-              </div>
+              {!editing ? (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px 16px' }}>
+                  {contactInfo.map((f, i) => <div key={i}><div style={{ fontSize: 10, color: colors.textFaint, textTransform: 'uppercase', marginBottom: 2 }}>{f.label}</div><div style={{ fontSize: 13, color: colors.textMuted }}>{f.value}</div></div>)}
+                </div>
+              ) : (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px 16px' }}>
+                  <div><div style={editLabel}>Name</div><input value={form.contactName} onChange={setField('contactName')} placeholder="Mohammed Al-Faisal" style={editInput} /></div>
+                  <div><div style={editLabel}>Designation</div><input value={form.designation} onChange={setField('designation')} placeholder="Sales Director" style={editInput} /></div>
+                  <div><div style={editLabel}>Phone</div><input value={user?.phone || ''} disabled style={editInputDisabled} /></div>
+                  <div><div style={editLabel}>Email</div><input value={user?.email || ''} disabled style={editInputDisabled} /></div>
+                </div>
+              )}
             </div>
 
             {/* DOCUMENTS */}
             <div style={{ background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 12, padding: '14px 18px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}><span style={sectionLabel}>Documents</span><span style={{ fontSize: 12, color: colors.greenDark, cursor: 'pointer' }}>Manage Documents</span></div>
-              {docs.map((d, i) => (
-                <div key={i} style={{ display: 'flex', gap: 12, alignItems: 'center', padding: '10px 0', borderBottom: `1px solid ${colors.surfaceMuted}` }}><div style={{ display: 'flex', gap: 10, alignItems: 'center', flex: 1 }}><svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth={1.7}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6" /></svg><div><div style={{ fontSize: 13, fontWeight: 500 }}>{d.name}</div><div style={{ fontSize: 11, color: colors.textFaint }}>{d.meta}</div></div></div><span style={d.badgeStyle}>{d.badge}</span><div style={{ display: 'flex', gap: 6 }}><span style={{ fontSize: 11, color: colors.greenDark, border: `1px solid ${colors.greenTintBorder}`, background: colors.greenTint, borderRadius: 5, padding: '3px 8px', cursor: 'pointer' }}>View</span><span style={{ fontSize: 11, color: colors.textMuted, border: `1px solid ${colors.border}`, background: '#fff', borderRadius: 5, padding: '3px 8px', cursor: 'pointer' }}>Replace</span></div></div>
-              ))}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}><span style={sectionLabel}>Documents</span></div>
+              {documents.length === 0 && <div style={{ fontSize: 12, color: colors.textFaint, padding: '8px 0' }}>No documents uploaded yet.</div>}
+              {documents.map((d) => {
+                const chip = d.status === 'VERIFIED' ? verifiedBadge : d.status === 'REJECTED' ? { ...pendingBadge, background: colors.redTint, border: `1px solid ${colors.redTintBorder}`, color: colors.red } : pendingBadge
+                const label = d.status === 'VERIFIED' ? 'Verified ✓' : d.status === 'REJECTED' ? 'Rejected' : 'Pending'
+                const meta = `Uploaded ${joinedLabel(d.createdAt)}${d.size ? ` · ${(d.size / 1e6).toFixed(1)}MB` : ''}`
+                return (
+                  <div key={d.id} style={{ display: 'flex', gap: 12, alignItems: 'center', padding: '10px 0', borderBottom: `1px solid ${colors.surfaceMuted}` }}>
+                    <div style={{ display: 'flex', gap: 10, alignItems: 'center', flex: 1, minWidth: 0 }}><svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth={1.7} style={{ flexShrink: 0 }}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6" /></svg><div style={{ minWidth: 0 }}><div style={{ fontSize: 13, fontWeight: 500 }}>{DOC_NAMES[d.type] || d.type}</div><div style={{ fontSize: 11, color: colors.textFaint, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{d.filename} · {meta}</div></div></div>
+                    <span style={chip}>{label}</span>
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      <span onClick={() => setPreviewDoc({ ...d, title: DOC_NAMES[d.type] || d.type })} style={{ fontSize: 11, color: colors.greenDark, border: `1px solid ${colors.greenTintBorder}`, background: colors.greenTint, borderRadius: 5, padding: '3px 8px', cursor: 'pointer' }}>View</span>
+                      <label style={{ fontSize: 11, color: colors.textMuted, border: `1px solid ${colors.border}`, background: '#fff', borderRadius: 5, padding: '3px 8px', cursor: docUploading ? 'default' : 'pointer' }}>
+                        <input type="file" accept="image/*,application/pdf" style={{ display: 'none' }} disabled={!!docUploading} onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; onReplaceDoc(d.type, f) }} />
+                        {docUploading === d.type ? 'Uploading…' : 'Replace'}
+                      </label>
+                    </div>
+                  </div>
+                )
+              })}
               <div style={{ fontSize: 12, color: colors.textFaint, marginTop: 10, lineHeight: 1.5, display: 'flex', gap: 4, alignItems: 'flex-start' }}><svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth={1.8} style={{ flexShrink: 0, marginTop: 2 }}><circle cx="12" cy="12" r="10" /><path d="M12 16v-4M12 8h.01" /></svg>Replacing documents requires admin re-verification. Account stays active during review.</div>
             </div>
 
@@ -273,6 +336,7 @@ export default function DeveloperProfile() {
           </div>
         </div>
       )}
+      <DocPreviewModal doc={previewDoc} onClose={() => setPreviewDoc(null)} />
     </>
   )
 }

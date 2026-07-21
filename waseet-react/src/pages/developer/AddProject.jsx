@@ -1,9 +1,9 @@
-import React, { useState, useRef } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { colors } from '../../theme/tokens'
 import { Icon } from '../../components/icons/Icon'
 import { Topbar } from '../../components/layout/Topbar'
-import { developerApi } from '../../lib/api'
+import { developerApi, geoApi } from '../../lib/api'
 import { MapPicker } from '../../components/MapPicker'
 import { ProjectProgressEditor } from '../../components/ProjectProgressEditor'
 
@@ -111,6 +111,16 @@ export default function AddProject() {
   const [ptype, setPtype] = useState('Apartments')
   const [city, setCity] = useState('Jeddah')
   const [area, setArea] = useState('')
+  const [geoCities, setGeoCities] = useState([])
+  const [areaDistricts, setAreaDistricts] = useState([])
+  useEffect(() => { geoApi.cities().then((l) => setGeoCities(Array.isArray(l) ? l : [])).catch(() => {}) }, [])
+  useEffect(() => {
+    const sel = geoCities.find((c) => c.name === city)
+    if (!sel) { setAreaDistricts([]); return }
+    let active = true
+    geoApi.districts(sel.id).then((d) => { if (active) setAreaDistricts(Array.isArray(d) ? d : []) }).catch(() => { if (active) setAreaDistricts([]) })
+    return () => { active = false }
+  }, [city, geoCities])
   const [address, setAddress] = useState('')
   const [description, setDescription] = useState('')
   const [imageKey, setImageKey] = useState(null)
@@ -119,8 +129,19 @@ export default function AddProject() {
   const [masterPlan, setMasterPlan] = useState(null) // {key,filename,size}
   const [documents, setDocuments] = useState({}) // { 'Project Brochure': {key,filename,size}, ... }
   const [floorPlans, setFloorPlans] = useState([]) // [{ label, key, filename, size, url }]
+  // real review data (used by the step-5 summary instead of hardcoded rows)
+  const reviewUnits = units.filter((u) => u.type)
+  const reviewImages = [imageUrl, ...gallery.map((g) => g.url)].filter(Boolean)
+  const uploadedDocs = Array.from(new Set([
+    ...Object.entries(documents).filter(([, v]) => v?.key).map(([name]) => name),
+    ...(masterPlan?.key ? ['Master Plan'] : []),
+    ...(floorPlans.length ? ['Floor Plans'] : []),
+  ]))
   const [busyDoc, setBusyDoc] = useState('') // which doc/master is uploading
   const [handover, setHandover] = useState('')
+  const [devStatus, setDevStatus] = useState('Under Construction')
+  const [floors, setFloors] = useState('')
+  const [totalUnits, setTotalUnits] = useState('')
   const [location, setLocation] = useState(null) // { lat, lng, address }
   const [uploading, setUploading] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -203,14 +224,17 @@ export default function AddProject() {
       details: {
         units: units.filter((u) => u.type || u.priceMin || u.priceMax),
         amenities: amenities.map((on, i) => (on ? amenityDefs[i]?.[1] : null)).filter(Boolean),
-        handover,
+        constructionStatus: devStatus,
+        handover: devStatus === 'Ready' ? '' : handover,
+        floors: floors ? Number(floors) || null : null,
+        totalUnits: totalUnits ? Number(totalUnits) || null : null,
         images: gallery.map((g) => g.key),
         masterPlanKey: masterPlan?.key || null,
         masterPlanName: masterPlan?.filename || null,
         documents: Object.fromEntries(Object.entries(documents).map(([k, v]) => [k, { key: v.key, filename: v.filename, size: v.size }])),
         floorPlans: floorPlans.map((f) => ({ label: f.label, key: f.key, filename: f.filename, size: f.size })),
-        progressPercent: Number(progress.progressPercent) || 0,
-        timeline: progress.timeline,
+        progressPercent: devStatus === 'Ready' ? 100 : (Number(progress.progressPercent) || 0),
+        timeline: devStatus === 'Ready' ? [] : progress.timeline,
         paymentPlan: progress.paymentPlan.map((p) => ({ ...p, pct: Number(p.pct) || 0 })),
       },
       status,
@@ -285,22 +309,32 @@ export default function AddProject() {
                 <div style={{ marginBottom: 12 }}><Field label="Project Name *"><input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Palm Residence" style={inputStyle} /></Field></div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 10, marginBottom: 12 }}>
                   <Field label="Project Type *"><select value={ptype} onChange={(e) => setPtype(e.target.value)} style={selStyle}><option>Apartments</option><option>Villas</option><option>Offices</option><option>Townhouses</option><option>Mixed</option></select></Field>
-                  <Field label="Development Status *"><select defaultValue="Under Construction" style={selStyle}><option>Under Construction</option><option>Ready</option><option>Off-plan</option></select></Field>
+                  <Field label="Development Status *"><select value={devStatus} onChange={(e) => setDevStatus(e.target.value)} style={selStyle}><option>Off-plan</option><option>Under Construction</option><option>Ready</option></select></Field>
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 10, marginBottom: 12 }}>
-                  <Field label="Expected Handover *"><input placeholder="Q4 2027" style={inputStyle} /></Field>
-                  <Field label="Completion %"><input placeholder="68" style={inputStyle} /></Field>
+                  {devStatus === 'Ready' ? (
+                    <Field label="Handover"><input value="Delivered — ready to move in" disabled style={{ ...inputStyle, background: colors.surfaceAlt, color: colors.textFaint }} /></Field>
+                  ) : (
+                    <Field label="Expected Handover *"><input value={handover} onChange={(e) => setHandover(e.target.value)} placeholder="Q4 2027" style={inputStyle} /></Field>
+                  )}
+                  <Field label="Completion %"><input value={progress.progressPercent} onChange={(e) => setProgress((p) => ({ ...p, progressPercent: e.target.value.replace(/[^\d]/g, '') }))} placeholder="68" style={inputStyle} /></Field>
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 10 }}>
-                  <Field label="Total Floors"><input placeholder="12" style={inputStyle} /></Field>
-                  <Field label="Total Units"><input placeholder="96" style={inputStyle} /></Field>
+                  <Field label="Total Floors"><input value={floors} onChange={(e) => setFloors(e.target.value)} placeholder="12" style={inputStyle} /></Field>
+                  <Field label="Total Units"><input value={totalUnits} onChange={(e) => setTotalUnits(e.target.value)} placeholder="96" style={inputStyle} /></Field>
                 </div>
               </div>
               <div style={{ ...card, marginBottom: 0 }}>
                 <div style={cardLabel}>Location</div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 10, marginBottom: 12 }}>
-                  <Field label="City *"><select value={city} onChange={(e) => setCity(e.target.value)} style={selStyle}><option>Jeddah</option><option>Riyadh</option><option>Dammam</option><option>Mecca</option><option>Dubai</option><option>Abu Dhabi</option></select></Field>
-                  <Field label="Area / Neighborhood *"><input value={area} onChange={(e) => setArea(e.target.value)} placeholder="Al Rawdhah" style={inputStyle} /></Field>
+                  <Field label="City *"><select value={city} onChange={(e) => { setCity(e.target.value); setArea('') }} style={selStyle}>
+                    {geoCities.length === 0 && <option value={city}>{city}</option>}
+                    {geoCities.map((c) => <option key={c.id} value={c.name}>{c.name}</option>)}
+                  </select></Field>
+                  <Field label="Area / Neighborhood *"><select value={area} onChange={(e) => setArea(e.target.value)} disabled={areaDistricts.length === 0} style={{ ...selStyle, color: area ? colors.ink : colors.textFaint }}>
+                    <option value="">{areaDistricts.length ? 'Select area' : 'Select a city first'}</option>
+                    {areaDistricts.map((d) => <option key={d.id} value={d.name}>{d.name}</option>)}
+                  </select></Field>
                 </div>
                 <div style={{ marginBottom: 12 }}><Field label="Full Address *"><input value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Street name, district, postal code" style={inputStyle} /></Field></div>
                 <div style={{ fontSize: 11, fontWeight: 600, color: colors.textFaint, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 8 }}>Pin location on map</div>
@@ -398,7 +432,7 @@ export default function AddProject() {
               </div>
               <div style={{ ...card, marginBottom: 0 }}>
                 <div style={cardLabel}>Construction timeline &amp; payment plan</div>
-                <ProjectProgressEditor value={progress} onChange={setProgress} />
+                <ProjectProgressEditor value={progress} onChange={setProgress} hideTimeline={devStatus === 'Ready'} />
               </div>
             </div>
           )}
@@ -507,11 +541,21 @@ export default function AddProject() {
               ))}
               <div style={{ background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 12, padding: '14px 16px', marginBottom: 10 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}><span style={{ fontSize: 13, fontWeight: 600 }}>Unit Types</span><span onClick={() => setStep(2)} style={{ fontSize: 12, color: colors.greenDark, cursor: 'pointer' }}>Edit ✏️</span></div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.3fr 1.3fr 0.7fr', gap: 6, fontSize: 12 }}>
-                  {['Type', 'Size', 'Price', 'Comm.'].map((h) => <span key={h} style={{ color: colors.textFaint }}>{h}</span>)}
-                  <span style={{ color: colors.textMuted }}>2BR</span><span style={{ color: colors.textMuted }}>110–130m²</span><span style={{ color: colors.textMuted }}>850k–1M</span><span style={{ color: colors.textMuted }}>3%</span>
-                  <span style={{ color: colors.textMuted }}>1BR</span><span style={{ color: colors.textMuted }}>75–90m²</span><span style={{ color: colors.textMuted }}>600k–700k</span><span style={{ color: colors.textMuted }}>3%</span>
-                </div>
+                {reviewUnits.length === 0 ? (
+                  <div style={{ fontSize: 12, color: colors.textFaint }}>No unit types added yet.</div>
+                ) : (
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.3fr 1.3fr 0.7fr', gap: 6, fontSize: 12 }}>
+                    {['Type', 'Size', 'Price', 'Comm.'].map((h) => <span key={h} style={{ color: colors.textFaint }}>{h}</span>)}
+                    {reviewUnits.map((u, i) => (
+                      <React.Fragment key={i}>
+                        <span style={{ color: colors.textMuted }}>{u.type}</span>
+                        <span style={{ color: colors.textMuted }}>{u.sizeMin || u.sizeMax ? `${u.sizeMin || '?'}–${u.sizeMax || '?'}m²` : '—'}</span>
+                        <span style={{ color: colors.textMuted }}>{u.priceMin || u.priceMax ? `${u.priceMin || '?'}–${u.priceMax || '?'}` : '—'}</span>
+                        <span style={{ color: colors.textMuted }}>{u.comm ? `${u.comm}%` : '—'}</span>
+                      </React.Fragment>
+                    ))}
+                  </div>
+                )}
               </div>
               <div style={{ background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 12, padding: '14px 16px', marginBottom: 10 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}><span style={{ fontSize: 13, fontWeight: 600 }}>Amenities</span><span onClick={() => setStep(3)} style={{ fontSize: 12, color: colors.greenDark, cursor: 'pointer' }}>Edit ✏️</span></div>
@@ -521,20 +565,39 @@ export default function AddProject() {
               </div>
               <div style={{ background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 12, padding: '14px 16px', marginBottom: 10 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}><span style={{ fontSize: 13, fontWeight: 600 }}>Documents &amp; Images</span><span onClick={() => setStep(4)} style={{ fontSize: 12, color: colors.greenDark, cursor: 'pointer' }}>Edit ✏️</span></div>
-                <div style={{ fontSize: 12, color: colors.textMuted, marginBottom: 10 }}>✓ Brochure · ✓ Payment Plan · ✓ NOC · ✓ Floor Plans</div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 6 }}>{[0, 1, 2, 3, 4].map((i) => <div key={i} style={{ aspectRatio: '5/4', borderRadius: 6, background: colors.surfaceMuted, backgroundImage: hatch }} />)}</div>
+                <div style={{ fontSize: 12, color: uploadedDocs.length ? colors.textMuted : colors.textFaint, marginBottom: 10 }}>{uploadedDocs.length ? uploadedDocs.map((d) => `✓ ${d}`).join(' · ') : 'No documents uploaded.'}</div>
+                {reviewImages.length === 0 ? (
+                  <div style={{ fontSize: 12, color: colors.textFaint }}>No images uploaded.</div>
+                ) : (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 6 }}>{reviewImages.slice(0, 5).map((src, i) => <img key={i} src={src} alt="" style={{ aspectRatio: '5/4', width: '100%', objectFit: 'cover', borderRadius: 6, border: `1px solid ${colors.border}` }} />)}</div>
+                )}
               </div>
               <div style={{ background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 12, padding: '14px 16px', marginBottom: 16 }}>
                 <div style={{ fontSize: 11, color: colors.textFaint, marginBottom: 10 }}>If sold at minimum price:</div>
-                <div style={{ display: 'grid', gridTemplateColumns: '0.7fr 1fr 0.6fr 1fr', gap: 6, fontSize: 12 }}>
-                  {['Type', 'Min Price', 'Comm%', 'Realtor earns'].map((h) => <span key={h} style={{ color: colors.textFaint }}>{h}</span>)}
-                  <span style={{ color: colors.textMuted }}>2BR</span><span style={{ color: colors.textMuted }}>SAR 850k</span><span style={{ color: colors.textMuted }}>3%</span><span style={{ color: colors.greenDark, fontWeight: 600 }}>SAR 25,500</span>
-                  <span style={{ color: colors.textMuted }}>1BR</span><span style={{ color: colors.textMuted }}>SAR 600k</span><span style={{ color: colors.textMuted }}>3%</span><span style={{ color: colors.greenDark, fontWeight: 600 }}>SAR 18,000</span>
-                </div>
+                {reviewUnits.filter((u) => u.priceMin).length === 0 ? (
+                  <div style={{ fontSize: 12, color: colors.textFaint }}>Add unit prices to preview realtor earnings.</div>
+                ) : (
+                  <div style={{ display: 'grid', gridTemplateColumns: '0.7fr 1fr 0.6fr 1fr', gap: 6, fontSize: 12 }}>
+                    {['Type', 'Min Price', 'Comm%', 'Realtor earns'].map((h) => <span key={h} style={{ color: colors.textFaint }}>{h}</span>)}
+                    {reviewUnits.filter((u) => u.priceMin).map((u, i) => {
+                      const minP = parseInt(String(u.priceMin).replace(/[^\d]/g, '')) || 0
+                      const comm = parseFloat(u.comm) || 0
+                      const earns = Math.round(minP * comm / 100)
+                      return (
+                        <React.Fragment key={i}>
+                          <span style={{ color: colors.textMuted }}>{u.type}</span>
+                          <span style={{ color: colors.textMuted }}>SAR {minP.toLocaleString()}</span>
+                          <span style={{ color: colors.textMuted }}>{u.comm || 0}%</span>
+                          <span style={{ color: colors.greenDark, fontWeight: 600 }}>SAR {earns.toLocaleString()}</span>
+                        </React.Fragment>
+                      )
+                    })}
+                  </div>
+                )}
               </div>
               {error && <div style={{ fontSize: 12, color: colors.red, marginBottom: 8 }}>{error}</div>}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                <button onClick={submit} disabled={saving} style={{ height: 38, background: colors.green, border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 600, color: '#fff', fontFamily: 'inherit', cursor: saving ? 'default' : 'pointer', opacity: saving ? 0.7 : 1 }}>{saving ? 'Submitting…' : 'Submit for Review'}</button>
+                <button onClick={() => submit('PENDING')} disabled={saving} style={{ height: 38, background: colors.green, border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 600, color: '#fff', fontFamily: 'inherit', cursor: saving ? 'default' : 'pointer', opacity: saving ? 0.7 : 1 }}>{saving ? 'Submitting…' : 'Submit for Review'}</button>
                 <button onClick={saveDraft} disabled={saving} style={{ height: 38, background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 8, fontSize: 14, color: colors.textMuted, fontFamily: 'inherit', cursor: 'pointer' }}>Save as Draft</button>
               </div>
               <div style={{ fontSize: 12, color: colors.textFaint, textAlign: 'center', marginTop: 10 }}>Admin reviews within 24 hours. You'll be notified by email.</div>

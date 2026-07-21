@@ -109,6 +109,7 @@ export default function AdminSettings() {
   const [toast, setToast] = useState(null) // { msg, sub, type }
   const [lastSaved, setLastSaved] = useState(null)
   const [maintModal, setMaintModal] = useState(false)
+  const [maintScope, setMaintScope] = useState('maintenance') // 'maintenance' | 'marketplaceMaintenance'
   const [maintForm, setMaintForm] = useState({
     etaMinutes: 30,
     message: "We're performing scheduled maintenance to improve your experience. The platform will be back shortly.",
@@ -248,31 +249,38 @@ export default function AdminSettings() {
   }, 'Database region updated')
 
   const maint = !!settings?.maintenance?.enabled
-  const toggleMaint = () => {
-    if (!maint) {
-      const m = settings?.maintenance
+  const mpMaint = !!settings?.marketplaceMaintenance?.enabled
+  // Opens the modal to switch a scope ON, or turns it straight OFF.
+  const toggleMaintScope = (scope) => {
+    const isOn = scope === 'marketplaceMaintenance' ? mpMaint : maint
+    if (!isOn) {
+      const m = settings?.[scope]
       if (m) setMaintForm({
         etaMinutes: m.etaMinutes ?? 30,
         message: m.message ?? maintForm.message,
         items: Array.isArray(m.items) && m.items.length ? m.items : maintForm.items,
       })
+      setMaintScope(scope)
       setMaintModal(true)
     } else patchAndToast(async () => {
-      const v = await settingsApi.updateSection('maintenance', { enabled: false })
-      setSection_('maintenance', v)
-    }, 'Maintenance mode disabled')
+      const v = await settingsApi.updateSection(scope, { enabled: false })
+      setSection_(scope, v)
+    }, `${scope === 'marketplaceMaintenance' ? 'Marketplace maintenance' : 'Maintenance mode'} disabled`)
   }
+  const toggleMaint = () => toggleMaintScope('maintenance')
+  const toggleMpMaint = () => toggleMaintScope('marketplaceMaintenance')
   const confirmMaint = () => {
     setMaintModal(false)
+    const scope = maintScope
     patchAndToast(async () => {
-      const v = await settingsApi.updateSection('maintenance', {
+      const v = await settingsApi.updateSection(scope, {
         enabled: true,
         etaMinutes: Number(maintForm.etaMinutes) || 30,
         message: maintForm.message,
         items: maintForm.items.filter((i) => i.label.trim()),
       })
-      setSection_('maintenance', v)
-    }, 'Maintenance mode enabled')
+      setSection_(scope, v)
+    }, `${scope === 'marketplaceMaintenance' ? 'Marketplace maintenance' : 'Maintenance mode'} enabled`)
   }
   const cycleItemStatus = (s) => (s === 'pending' ? 'active' : s === 'active' ? 'done' : 'pending')
   const setItem = (i, patch) => setMaintForm((f) => ({ ...f, items: f.items.map((it, j) => (j === i ? { ...it, ...patch } : it)) }))
@@ -571,6 +579,21 @@ export default function AdminSettings() {
                   </div>
                 </div>
 
+                <div style={{ marginTop: 16, paddingTop: 16, borderTop: `1px solid ${colors.surfaceMuted}` }}>
+                  <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 4 }}>Marketplace maintenance</div>
+                  <div style={{ fontSize: 12, color: colors.textFaint, marginBottom: 10 }}>Take only the marketplace offline for realtors. Dashboards, leads &amp; commissions stay online.</div>
+                  <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                    <Toggle on={mpMaint} onClick={toggleMpMaint} disabled={maint} />
+                    {maint ? (
+                      <span style={{ fontSize: 12, color: colors.textFaint }}>Included in full-platform maintenance</span>
+                    ) : !mpMaint ? (
+                      <span style={{ fontSize: 12, color: colors.green, display: 'flex', alignItems: 'center', gap: 4 }}><span style={{ width: 6, height: 6, borderRadius: '50%', background: colors.green, animation: 'pulse-dot 1.6s infinite' }} />Marketplace is live</span>
+                    ) : (
+                      <span style={{ fontSize: 12, color: colors.red }}>Marketplace in maintenance</span>
+                    )}
+                  </div>
+                </div>
+
                 {/* BACKUPS */}
                 <div style={{ marginTop: 16, paddingTop: 16, borderTop: `1px solid ${colors.surfaceMuted}` }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
@@ -641,10 +664,10 @@ export default function AdminSettings() {
         <div onClick={() => setMaintModal(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
           <div onClick={(e) => e.stopPropagation()} style={{ background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 12, padding: '18px 20px', maxWidth: 480, width: '100%', maxHeight: '88vh', overflowY: 'auto', boxShadow: '0 10px 30px rgba(0,0,0,0.12)' }} className="wa-form">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-              <span style={{ fontSize: 15, fontWeight: 700 }}>Enable maintenance mode</span>
+              <span style={{ fontSize: 15, fontWeight: 700 }}>{maintScope === 'marketplaceMaintenance' ? 'Enable marketplace maintenance' : 'Enable maintenance mode'}</span>
               <span onClick={() => setMaintModal(false)} style={{ fontSize: 18, color: colors.textFaint, cursor: 'pointer' }}>×</span>
             </div>
-            <div style={{ background: colors.redTint, border: `1px solid ${colors.redTintBorder}`, borderRadius: 8, padding: '10px 12px', marginBottom: 16, fontSize: 12.5, color: '#991B1B', lineHeight: 1.5 }}>Realtors, developers and the marketplace will be blocked immediately. Admins keep full access. These details show on the maintenance page.</div>
+            <div style={{ background: colors.redTint, border: `1px solid ${colors.redTintBorder}`, borderRadius: 8, padding: '10px 12px', marginBottom: 16, fontSize: 12.5, color: '#991B1B', lineHeight: 1.5 }}>{maintScope === 'marketplaceMaintenance' ? 'The marketplace will be blocked for realtors immediately. Dashboards, leads and commissions stay online. Admins keep full access. These details show on the marketplace maintenance page.' : 'Realtors, developers and the marketplace will be blocked immediately. Admins keep full access. These details show on the maintenance page.'}</div>
 
             {/* ETA */}
             <div style={{ marginBottom: 14 }}>
@@ -687,7 +710,7 @@ export default function AdminSettings() {
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
               <button onClick={() => setMaintModal(false)} style={{ height: 34, padding: '0 14px', background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 7, fontSize: 12, color: colors.textMuted, fontFamily: 'inherit', cursor: 'pointer' }}>Cancel</button>
-              <button onClick={confirmMaint} style={{ height: 34, padding: '0 14px', background: colors.red, border: 'none', borderRadius: 7, fontSize: 12, fontWeight: 600, color: '#fff', fontFamily: 'inherit', cursor: 'pointer' }}>Enable Maintenance</button>
+              <button onClick={confirmMaint} style={{ height: 34, padding: '0 14px', background: colors.red, border: 'none', borderRadius: 7, fontSize: 12, fontWeight: 600, color: '#fff', fontFamily: 'inherit', cursor: 'pointer' }}>{maintScope === 'marketplaceMaintenance' ? 'Enable Marketplace Maintenance' : 'Enable Maintenance'}</button>
             </div>
           </div>
         </div>

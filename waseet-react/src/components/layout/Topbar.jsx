@@ -1,7 +1,10 @@
 import React from 'react'
+import { useNavigate } from 'react-router-dom'
 import { colors } from '../../theme/tokens'
 import { Icon } from '../icons/Icon'
 import { useDrawer } from './DrawerContext'
+import { useCounts } from './CountsContext'
+import { useAuth } from '../../context/AuthContext'
 
 /**
  * 56px portal top bar: left slot (page title or breadcrumb) + right actions.
@@ -9,6 +12,13 @@ import { useDrawer } from './DrawerContext'
  */
 export function Topbar({ title, left, right, actions, notifications = 0, avatar }) {
   const drawer = useDrawer()
+  const counts = useCounts()
+  const navigate = useNavigate()
+  const { user } = useAuth() || {}
+  // prefer the live unread count from the portal; fall back to the passed prop
+  const notifCount = counts?.notifications ?? notifications
+  // the bell links to the current role's notifications page
+  const notifTo = user?.role === 'REALTOR' ? '/realtor/notifications' : user?.role === 'DEVELOPER' ? '/developer/notifications' : null
   return (
     <div
       className="wa-topbar"
@@ -40,29 +50,35 @@ export function Topbar({ title, left, right, actions, notifications = 0, avatar 
       <div style={{ display: 'flex', alignItems: 'center', gap: 14, minWidth: 0 }}>
         {right}
         {actions}
-        {notifications > 0 && (
-          <div style={{ position: 'relative', display: 'flex', cursor: 'pointer' }}>
+        {(notifTo || notifCount > 0) && (
+          <div
+            onClick={() => notifTo && navigate(notifTo)}
+            title="Notifications"
+            style={{ position: 'relative', display: 'flex', cursor: notifTo ? 'pointer' : 'default' }}
+          >
             <Icon name="bell" size={20} color={colors.textSoft} />
-            <span
-              style={{
-                position: 'absolute',
-                top: -4,
-                right: -5,
-                background: colors.green,
-                color: '#fff',
-                fontSize: 9,
-                fontWeight: 700,
-                borderRadius: 999,
-                minWidth: 15,
-                height: 15,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                padding: '0 3px',
-              }}
-            >
-              {notifications}
-            </span>
+            {notifCount > 0 && (
+              <span
+                style={{
+                  position: 'absolute',
+                  top: -4,
+                  right: -5,
+                  background: colors.green,
+                  color: '#fff',
+                  fontSize: 9,
+                  fontWeight: 700,
+                  borderRadius: 999,
+                  minWidth: 15,
+                  height: 15,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '0 3px',
+                }}
+              >
+                {notifCount}
+              </span>
+            )}
           </div>
         )}
         {avatar}

@@ -6,6 +6,9 @@ import { s3, buckets } from '../../lib/s3.js'
 import { getSection } from '../../lib/settings.js'
 import { ApiError } from '../../middleware/error.js'
 import { imageUrl } from '../../lib/projectMedia.js'
+import { raiseDispute, listMyDisputes } from '../../lib/disputes.js'
+import { sendDealClosedEmail, sendCommissionPaidEmail, sendLeadStatusEmail } from '../../lib/mailer.js'
+import { logger } from '../../utils/logger.js'
 
 // ---- projects ----------------------------------------------------------------
 // resolve any media keys inside the details blob into signed URLs for the client
@@ -105,8 +108,17 @@ export async function uploadProjectFile(devId, file) {
 const leadView = (l) => ({
   id: l.id, projectName: l.projectName, realtorName: l.realtorName, unit: l.unit,
   clientName: l.clientName, clientPhone: l.clientPhone, clientEmail: l.clientEmail, budget: l.budget,
-  status: l.status, notes: l.notes, createdAt: l.createdAt, updatedAt: l.updatedAt,
+  status: l.status, statusHistory: l.statusHistory || null, notes: l.notes, createdAt: l.createdAt, updatedAt: l.updatedAt,
 })
+
+// append a status transition to a lead's history (backfilling NEW@createdAt for
+// leads created before history tracking existed)
+function appendHistory(lead, status) {
+  const base = Array.isArray(lead.statusHistory) && lead.statusHistory.length
+    ? lead.statusHistory
+    : [{ status: 'NEW', at: new Date(lead.createdAt).toISOString() }]
+  return [...base, { status, at: new Date().toISOString() }]
+}
 
 export async function listLeads(devId, { status } = {}) {
   const where = { developerId: devId }
@@ -118,7 +130,14 @@ export async function listLeads(devId, { status } = {}) {
 export async function getLead(devId, id) {
   const l = await prisma.lead.findUnique({ where: { id } })
   if (!l || l.developerId !== devId) throw new ApiError(404, 'Lead not found', 'NOT_FOUND')
-  return leadView(l)
+  // include the commission (if the deal is closed) so the UI can drive the
+  // payment state instead of a client-side placeholder
+  const c = await prisma.commission.findUnique({
+    where: { leadId: id },
+    select: { id: true, status: true, gross: true, net: true, platformPct: true, dealRef: true, paidByDevAt: true },
+  })
+  const proj = l.projectId ? await prisma.project.findUnique({ where: { id: l.projectId }, select: { imageKey: true } }) : null
+  return { ...leadView(l), commission: c || null, projectImage: proj?.imageKey ? await imageUrl(proj.imageKey) : null }
 }
 
 export async function updateLeadStatus(devId, id, status) {
@@ -126,18 +145,23 @@ export async function updateLeadStatus(devId, id, status) {
   if (!l || l.developerId !== devId) throw new ApiError(404, 'Lead not found', 'NOT_FOUND')
   const valid = ['NEW', 'CONTACTED', 'VIEWING', 'NEGOTIATING', 'CLOSED', 'LOST']
   if (!valid.includes(status)) throw new ApiError(400, 'Invalid status', 'BAD_STATUS')
-  await prisma.lead.update({ where: { id }, data: { status } })
+  await prisma.lead.update({ where: { id }, data: { status, statusHistory: appendHistory(l, status) } })
   await prisma.notification.create({ data: { userId: l.realtorId, type: 'lead', title: 'Lead status updated', body: `${l.clientName} — ${l.projectName} is now ${status[0] + status.slice(1).toLowerCase()}.`, link: '/realtor/leads', read: false } })
+  const rl = await prisma.user.findUnique({ where: { id: l.realtorId }, select: { email: true, fullName: true } })
+  sendLeadStatusEmail(rl?.email, { fullName: rl?.fullName, clientName: l.clientName, projectName: l.projectName, status }).catch((e) => logger.warn({ err: e?.message }, 'lead status email failed'))
   return getLead(devId, id)
 }
 
 // close a deal → generate the commission the developer owes the realtor
-export async function closeDeal(devId, id, { gross }) {
+export async function closeDeal(devId, id, { gross, closedAt }) {
   const l = await prisma.lead.findUnique({ where: { id }, include: { commission: true } })
   if (!l || l.developerId !== devId) throw new ApiError(404, 'Lead not found', 'NOT_FOUND')
   if (l.commission) throw new ApiError(409, 'A commission already exists for this deal', 'ALREADY_CLOSED')
   const amount = Math.round(Number(gross))
   if (!Number.isFinite(amount) || amount <= 0) throw new ApiError(400, 'Enter the commission amount', 'BAD_AMOUNT')
+  // use the chosen closing date if valid, otherwise stamp "now"
+  const closedDate = closedAt ? new Date(closedAt) : new Date()
+  const closedOn = Number.isNaN(closedDate.getTime()) ? new Date() : closedDate
   const commissionCfg = await getSection('commission')
   const platformPct = commissionCfg.defaultPct ?? 15
   const net = Math.round(amount * (1 - platformPct / 100))
@@ -146,16 +170,18 @@ export async function closeDeal(devId, id, { gross }) {
   const dealRef = `WS-${new Date().getFullYear()}-${String(count + 1).padStart(3, '0')}`
 
   const [, commission] = await prisma.$transaction([
-    prisma.lead.update({ where: { id }, data: { status: 'CLOSED' } }),
+    prisma.lead.update({ where: { id }, data: { status: 'CLOSED', statusHistory: appendHistory(l, 'CLOSED') } }),
     prisma.commission.create({
       data: {
         realtorId: l.realtorId, developerId: devId, leadId: l.id, projectId: l.projectId,
         dealRef, projectName: l.projectName, developerName: dev.companyName || dev.fullName, realtorName: l.realtorName,
-        unit: l.unit, closedAt: new Date(), gross: amount, platformPct, net, status: 'PENDING',
+        unit: l.unit, closedAt: closedOn, gross: amount, platformPct, net, status: 'PENDING',
       },
     }),
   ])
   await prisma.notification.create({ data: { userId: l.realtorId, type: 'commission', title: 'Deal closed — commission created', body: `${dealRef}: SAR ${net.toLocaleString()} pending developer payment.`, link: '/realtor/commissions', read: false } })
+  const rl = await prisma.user.findUnique({ where: { id: l.realtorId }, select: { email: true, fullName: true } })
+  sendDealClosedEmail(rl?.email, { fullName: rl?.fullName, dealRef, projectName: l.projectName, net }).catch((e) => logger.warn({ err: e?.message }, 'deal closed email failed'))
   return { lead: leadView(await prisma.lead.findUnique({ where: { id } })), commission: { id: commission.id, dealRef, net } }
 }
 
@@ -194,6 +220,8 @@ export async function payCommission(devId, id) {
   await prisma.commission.update({ where: { id }, data: { status: 'PROCESSING', paidByDevAt: new Date() } })
   await prisma.notification.create({ data: { userId: c.realtorId, type: 'commission', title: 'Commission paid by developer', body: `${c.dealRef}: SAR ${c.net.toLocaleString()} is now available to withdraw.`, link: '/realtor/commissions', read: false } })
   await prisma.auditLog.create({ data: { actorId: devId, action: 'developer.pay_commission', entity: 'Commission', entityId: id } })
+  const rl = await prisma.user.findUnique({ where: { id: c.realtorId }, select: { email: true, fullName: true } })
+  sendCommissionPaidEmail(rl?.email, { fullName: rl?.fullName, dealRef: c.dealRef, net: c.net }).catch((e) => logger.warn({ err: e?.message }, 'commission paid email failed'))
   return { id, status: 'PROCESSING' }
 }
 
@@ -271,4 +299,12 @@ export async function markRead(userId, id) {
 export async function markAllRead(userId) {
   await prisma.notification.updateMany({ where: { userId, read: false }, data: { read: true } })
   return { ok: true }
+}
+
+// ---- disputes -----------------------------------------------------------------
+export function createDispute(devId, body) {
+  return raiseDispute({ userId: devId, role: 'DEVELOPER', ...body })
+}
+export function listDisputes(devId) {
+  return listMyDisputes(devId)
 }

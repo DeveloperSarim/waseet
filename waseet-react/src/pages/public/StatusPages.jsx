@@ -109,26 +109,29 @@ function pad(n) {
   return String(n).padStart(2, '0')
 }
 
-export function MaintenancePage() {
+export function MaintenancePage({ scope = 'platform', embedded = false } = {}) {
   const navigate = useNavigate()
+  const isMarketplace = scope === 'marketplace'
   const [info, setInfo] = useState(null)
   const [cd, setCd] = useState(0)
 
-  // poll platform status: if maintenance is off, the platform is back → go home
+  // poll status: once the relevant maintenance flag clears, send the user back
+  // (home for the platform, or the marketplace for a marketplace-only outage)
   useEffect(() => {
     let alive = true
     const check = async () => {
       try {
         const s = await statusApi.get()
         if (!alive) return
-        if (!s?.maintenance) { navigate('/', { replace: true }); return }
-        setInfo(s.info || {})
+        const down = isMarketplace ? s?.marketplaceMaintenance : s?.maintenance
+        if (!down) { navigate(isMarketplace ? '/marketplace' : '/', { replace: true }); return }
+        setInfo((isMarketplace ? s.marketplaceInfo : s.info) || {})
       } catch { /* keep showing the page */ }
     }
     check()
     const poll = setInterval(check, 60000) // auto-refresh every 60s
     return () => { alive = false; clearInterval(poll) }
-  }, [navigate])
+  }, [navigate, isMarketplace])
 
   // countdown ticks toward expectedBack
   useEffect(() => {
@@ -147,8 +150,9 @@ export function MaintenancePage() {
   const message = info?.message || "We're performing scheduled maintenance to improve your experience. The platform will be back shortly."
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: colors.bg, fontFamily: 'Inter, sans-serif', color: colors.ink }}>
-      {/* TOP BAR */}
+    <div style={{ minHeight: embedded ? '70vh' : '100vh', display: 'flex', flexDirection: 'column', background: colors.bg, fontFamily: 'Inter, sans-serif', color: colors.ink }}>
+      {/* TOP BAR — hidden when embedded inside a layout that already has one */}
+      {!embedded && (
       <div style={{ height: 56, flexShrink: 0, background: '#fff', borderBottom: `1px solid ${colors.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 32px' }}>
         <div style={{ display: 'flex', alignItems: 'center' }}>
           <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={colors.ink} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0Z" /><circle cx="12" cy="10" r="3" /></svg>
@@ -160,6 +164,7 @@ export function MaintenancePage() {
           <a href="mailto:support@waseet.io" style={{ fontSize: 12, color: colors.greenDark, textDecoration: 'none' }}>support@waseet.io</a>
         </div>
       </div>
+      )}
 
       {/* MAIN */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', padding: '48px 24px' }}>
@@ -183,7 +188,7 @@ export function MaintenancePage() {
             <span style={{ fontSize: 12, fontWeight: 500, color: colors.amberText }}>Scheduled maintenance in progress</span>
           </div>
 
-          <div style={{ fontSize: 28, fontWeight: 700, letterSpacing: '-0.03em', lineHeight: 1.15, marginBottom: 10 }}>Waseet is being updated</div>
+          <div style={{ fontSize: 28, fontWeight: 700, letterSpacing: '-0.03em', lineHeight: 1.15, marginBottom: 10 }}>{isMarketplace ? 'Marketplace is being updated' : 'Waseet is being updated'}</div>
           <div style={{ fontSize: 14, color: colors.textSoft, lineHeight: 1.7, maxWidth: 420, margin: '0 auto 24px' }}>{message}</div>
 
           {/* estimated time card */}
@@ -277,12 +282,14 @@ export function MaintenancePage() {
         </div>
       </div>
 
-      {/* FOOTER */}
+      {/* FOOTER — hidden when embedded inside a layout that already has one */}
+      {!embedded && (
       <div style={{ flexShrink: 0, background: '#fff', borderTop: `1px solid ${colors.border}`, padding: '16px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
         <span style={{ fontSize: 12, color: colors.textFaint }}>© 2026 Waseet</span>
         <span style={{ fontSize: 12, color: colors.textFaint }}>Maintenance by Waseet Engineering</span>
         <span style={{ fontSize: 12, color: colors.textFaint }}>waseet.io</span>
       </div>
+      )}
     </div>
   )
 }

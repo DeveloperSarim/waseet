@@ -29,6 +29,10 @@ developerRouter.get('/commissions', h((req) => svc.listCommissions(req.user.id, 
 developerRouter.post('/commissions/:id/pay', h((req) => svc.payCommission(req.user.id, req.params.id)))
 developerRouter.post('/commissions/:id/mark-failed', h((req) => svc.markCommissionFailed(req.user.id, req.params.id, req.body?.reason)))
 
+// disputes
+developerRouter.get('/disputes', h((req) => svc.listDisputes(req.user.id).then((disputes) => ({ disputes }))))
+developerRouter.post('/disputes', h((req) => svc.createDispute(req.user.id, req.body || {}).then((dispute) => ({ dispute }))))
+
 // network / analytics / dashboard
 developerRouter.get('/network', h((req) => svc.network(req.user.id).then((realtors) => ({ realtors }))))
 developerRouter.get('/analytics', h((req) => svc.analytics(req.user.id)))

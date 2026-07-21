@@ -8,6 +8,19 @@ export const registerSchema = z.object({
   country: z.enum(['SA', 'AE', 'PK']).optional(),
   city: z.string().max(80).optional(),
   avatarKey: z.string().max(300).optional(),
+  // developer company details captured at sign-up
+  contactName: z.string().max(120).optional(),
+  website: z.string().max(200).optional(),
+  // realtor professional details captured at sign-up
+  agency: z.string().max(160).optional(),
+  specialization: z.string().max(200).optional(),
+  languages: z.string().max(160).optional(),
+  experience: z.string().max(80).optional(),
+  licenseType: z.string().max(80).optional(),
+  licenseNumber: z.string().max(80).optional(),
+  licenseExpiry: z.string().max(40).optional(),
+  idType: z.string().max(80).optional(),
+  idNumber: z.string().max(80).optional(),
 })
 
 export const loginSchema = z.object({
@@ -37,6 +50,11 @@ export const updateMeSchema = z.object({
   specialization: z.string().max(200).optional(),
   languages: z.string().max(160).optional(),
   experience: z.string().max(80).optional(),
+  licenseType: z.string().max(80).optional(),
+  licenseNumber: z.string().max(80).optional(),
+  licenseExpiry: z.string().max(40).optional(),
+  idType: z.string().max(80).optional(),
+  idNumber: z.string().max(80).optional(),
   bankName: z.string().max(120).optional(),
   iban: z.string().max(60).optional(),
   bankCountry: z.string().max(60).optional(),

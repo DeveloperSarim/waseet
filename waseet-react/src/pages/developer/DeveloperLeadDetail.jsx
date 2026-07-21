@@ -47,10 +47,17 @@ export default function DeveloperLeadDetail() {
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
 
-  const [paid, setPaid] = useState(false)
+  const [payOpen, setPayOpen] = useState(false)
+  const [paying, setPaying] = useState(false)
+  const [payErr, setPayErr] = useState('')
+  const [card, setCard] = useState({ number: '4242 4242 4242 4242', exp: '12 / 34', cvc: '123', name: '' })
   const [closeOpen, setCloseOpen] = useState(false)
   const [disputeOpen, setDisputeOpen] = useState(false)
+  const [disputeReason, setDisputeReason] = useState('')
+  const [disputeErr, setDisputeErr] = useState('')
+  const [submittingDispute, setSubmittingDispute] = useState(false)
   const [price, setPrice] = useState('')
+  const [closingDate, setClosingDate] = useState('')
   const [statusChoice, setStatusChoice] = useState('')
   const [updating, setUpdating] = useState(false)
   const [closing, setClosing] = useState(false)
@@ -100,6 +107,36 @@ export default function DeveloperLeadDetail() {
     }
   }
 
+  // Pay the commission through the (test-mode) gateway. On success the backend
+  // moves it PENDING → PROCESSING, notifies the realtor and the net becomes
+  // available in their wallet — no payment-proof upload / manual verification.
+  const payNow = async () => {
+    const commission = lead?.commission || closedInfo?.commission
+    if (!commission?.id) { setPayErr('Commission not found for this deal.'); return }
+    setPaying(true); setPayErr('')
+    try {
+      await developerApi.payCommission(commission.id)
+      setPayOpen(false)
+      showToast(`Payment successful — ${sar(commission.net)} credited to ${lead.realtorName || 'the realtor'}`)
+      load()
+    } catch (e) {
+      setPayErr(e?.message || 'Payment could not be processed.')
+    } finally {
+      setPaying(false)
+    }
+  }
+
+  const submitDispute = async () => {
+    if (submittingDispute || !lead) return
+    if (!disputeReason.trim()) { setDisputeErr('Please describe the issue.'); return }
+    setSubmittingDispute(true); setDisputeErr('')
+    try {
+      await developerApi.createDispute({ leadId: lead.id, subject: disputeReason.trim().split('\n')[0].slice(0, 80), description: disputeReason.trim() })
+      setDisputeOpen(false); setDisputeReason('')
+      showToast('Dispute submitted — our team reviews within 48 hours')
+    } catch (e) { setDisputeErr(e.message || 'Could not submit dispute') } finally { setSubmittingDispute(false) }
+  }
+
   const priceNum = Number(String(price).replace(/[^\d]/g, '')) || 0
   const comm = Math.round(priceNum * 0.03)
   const fee = Math.round(comm * 0.15)
@@ -110,9 +147,9 @@ export default function DeveloperLeadDetail() {
     if (!comm) { setCloseErr('Enter a valid sale price.'); return }
     setClosing(true); setCloseErr('')
     try {
-      const res = await developerApi.closeDeal(lead.id, comm)
+      const res = await developerApi.closeDeal(lead.id, comm, closingDate || undefined)
       setClosedInfo(res)
-      setCloseOpen(false); setPaid(false)
+      setCloseOpen(false)
       showToast(`Deal closed — commission ${sar(comm)} created for the realtor`)
       load()
     } catch (e) {
@@ -146,6 +183,9 @@ export default function DeveloperLeadDetail() {
 
   const label = ENUM_TO_LABEL[lead.status] || lead.status
   const view = lead.status === 'CLOSED' ? 'closed' : lead.status === 'LOST' ? 'lost' : 'neg'
+  const commission = lead.commission || closedInfo?.commission || null
+  const commStatus = commission?.status
+  const commPaid = commStatus === 'PROCESSING' || commStatus === 'PAID'
   const currentIdx = STATUS_ORDER.indexOf(lead.status)
   const budgetNum = budgetOf(lead.budget)
   const budgetLabel = budgetNum ? sar(budgetNum) : '—'
@@ -256,7 +296,11 @@ export default function DeveloperLeadDetail() {
             <div style={card}>
               <div style={{ ...sectionLabel, marginBottom: 12 }}>Project</div>
               <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
-                <div style={{ width: 64, height: 48, minWidth: 64, borderRadius: 8, background: colors.surfaceMuted, backgroundImage: hatch }} />
+                {lead.projectImage ? (
+                  <img src={lead.projectImage} alt="" style={{ width: 64, height: 48, minWidth: 64, borderRadius: 8, objectFit: 'cover', border: `1px solid ${colors.border}` }} />
+                ) : (
+                  <div style={{ width: 64, height: 48, minWidth: 64, borderRadius: 8, background: colors.surfaceMuted, backgroundImage: hatch }} />
+                )}
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 3 }}>{lead.projectName}</div>
                   <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
@@ -300,19 +344,30 @@ export default function DeveloperLeadDetail() {
               <div style={rLabel}>Lead Status</div>
 
               {view === 'closed' ? (
-                paid ? (
-                  <div style={{ background: colors.amberTint, border: `1px solid ${colors.amberTintBorder}`, borderRadius: 10, padding: '14px 16px', textAlign: 'center' }}>
-                    <svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke={colors.amber} strokeWidth={1.8} style={{ marginBottom: 8 }}><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg>
-                    <div style={{ fontSize: 14, fontWeight: 600, color: colors.amberText }}>Payment proof uploaded</div>
-                    <div style={{ fontSize: 12, color: colors.textFaint, marginTop: 4 }}>Awaiting Waseet verification</div>
+                commPaid ? (
+                  <div style={{ background: colors.greenTint, border: `1px solid ${colors.greenTintBorder}`, borderRadius: 10, padding: '14px 16px', textAlign: 'center' }}>
+                    <svg width={24} height={24} viewBox="0 0 24 24" fill="none" stroke={colors.green} strokeWidth={2} style={{ marginBottom: 8 }}><circle cx="12" cy="12" r="10" /><path d="M8 12l2.5 2.5L16 9" /></svg>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: colors.greenDark }}>Commission paid ✓</div>
+                    <div style={{ fontSize: 13, color: colors.textSoft, marginTop: 3 }}>{sar(commission?.net)} credited to {lead.realtorName || 'the realtor'}’s wallet</div>
+                    <div style={{ fontSize: 11, color: colors.textFaint, marginTop: 6 }}>Paid via Stripe (test mode){commission?.paidByDevAt ? ' · ' + fmtDate(commission.paidByDevAt) : ''}</div>
+                  </div>
+                ) : commStatus === 'FAILED' ? (
+                  <div style={{ background: colors.redTint, border: `1px solid ${colors.redTintBorder}`, borderRadius: 10, padding: '14px 16px', textAlign: 'center' }}>
+                    <svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke={colors.red} strokeWidth={1.9} style={{ marginBottom: 8 }}><circle cx="12" cy="12" r="10" /><path d="M15 9l-6 6M9 9l6 6" /></svg>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: '#991B1B' }}>Payment failed</div>
+                    <div style={{ fontSize: 12, color: colors.textFaint, marginTop: 4 }}>Please try the payment again.</div>
+                    <button onClick={() => { setPayErr(''); setPayOpen(true) }} style={{ width: '100%', height: 36, marginTop: 10, background: colors.ink, border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 600, color: '#fff', fontFamily: 'inherit', cursor: 'pointer' }}>Retry payment</button>
                   </div>
                 ) : (
                   <div style={{ background: colors.greenTint, border: `1px solid ${colors.greenTintBorder}`, borderRadius: 10, padding: '14px 16px', textAlign: 'center' }}>
                     <svg width={24} height={24} viewBox="0 0 24 24" fill="none" stroke={colors.green} strokeWidth={2} style={{ marginBottom: 8 }}><circle cx="12" cy="12" r="10" /><path d="M8 12l2.5 2.5L16 9" /></svg>
                     <div style={{ fontSize: 16, fontWeight: 700 }}>Deal Closed! 🎉</div>
-                    <div style={{ fontSize: 13, color: colors.textSoft, marginTop: 2 }}>{closedCommission != null ? `${sar(closedCommission)} commission due` : 'Commission recorded'}</div>
+                    <div style={{ fontSize: 13, color: colors.textSoft, marginTop: 2 }}>{commission?.gross != null ? `${sar(commission.gross)} commission due` : closedCommission != null ? `${sar(closedCommission)} commission due` : 'Commission recorded'}</div>
                     <div style={{ fontSize: 12, color: colors.amber, marginTop: 4 }}>Payment due within 7 days</div>
-                    <button onClick={() => setPaid(true)} style={{ width: '100%', height: 36, marginTop: 10, background: colors.green, border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 600, color: '#fff', fontFamily: 'inherit', cursor: 'pointer' }}>Upload Payment Proof</button>
+                    <button onClick={() => { setPayErr(''); setPayOpen(true) }} disabled={!commission?.id} style={{ width: '100%', height: 36, marginTop: 10, background: colors.ink, border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 600, color: '#fff', fontFamily: 'inherit', cursor: commission?.id ? 'pointer' : 'default', opacity: commission?.id ? 1 : 0.6, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7 }}>
+                      <svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={1.9}><rect x="2" y="5" width="20" height="14" rx="2" /><path d="M2 10h20" /></svg>
+                      Pay Commission
+                    </button>
                   </div>
                 )
               ) : (
@@ -355,7 +410,7 @@ export default function DeveloperLeadDetail() {
             </div>
 
             {/* Commission preview */}
-            {view !== 'lost' && budgetNum > 0 && (
+            {view === 'neg' && budgetNum > 0 && (
               <div style={{ ...card, marginBottom: 0 }}>
                 <div style={rLabel}>Commission Preview</div>
                 <div style={{ fontSize: 11, color: colors.textFaint, marginBottom: 10 }}>If closed at {sar(budgetNum)}{lead.unit ? ` (${lead.unit})` : ''}:</div>
@@ -386,7 +441,7 @@ export default function DeveloperLeadDetail() {
                   <input value={price} onChange={(e) => setPrice(fmt(e.target.value))} placeholder="900,000" style={{ flex: 1, border: 'none', padding: '0 10px', fontSize: 13, fontFamily: 'inherit', minWidth: 0 }} />
                 </div>
               </div>
-              <div><div style={modalFieldLabel}>Closing Date</div><input placeholder="DD / MM / YYYY" style={inputStyle} /></div>
+              <div><div style={modalFieldLabel}>Closing Date</div><input type="date" value={closingDate} onChange={(e) => setClosingDate(e.target.value)} style={inputStyle} /></div>
             </div>
             <div style={{ background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 8, padding: '10px 12px', marginTop: 12 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: colors.textMuted }}><span>Commission (3%)</span><span>{sar(comm)}</span></div>
@@ -411,11 +466,54 @@ export default function DeveloperLeadDetail() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}><span style={{ fontSize: 14, fontWeight: 600 }}>Raise a dispute</span><span onClick={() => setDisputeOpen(false)} style={{ fontSize: 18, color: colors.textFaint, cursor: 'pointer' }}>×</span></div>
             <div style={{ background: colors.bg, border: `1px solid ${colors.surfaceMuted}`, borderRadius: 8, padding: '10px 12px', marginBottom: 14 }}><div style={{ fontSize: 13, color: colors.textMuted }}>{lead.clientName} · {lead.projectName}{lead.unit ? ` ${lead.unit}` : ''}</div><div style={{ fontSize: 11, color: colors.textFaint, marginTop: 3 }}>Lead #{lead.id}</div></div>
             <div style={{ fontSize: 12, fontWeight: 500, color: colors.textMuted, marginBottom: 4 }}>Reason for dispute *</div>
-            <textarea placeholder="Describe the issue clearly..." style={{ width: '100%', height: 100, border: `1px solid ${colors.border}`, borderRadius: 7, padding: '8px 10px', fontSize: 13, fontFamily: 'inherit', resize: 'none' }} />
+            <textarea value={disputeReason} onChange={(e) => setDisputeReason(e.target.value)} placeholder="Describe the issue clearly..." style={{ width: '100%', height: 100, border: `1px solid ${colors.border}`, borderRadius: 7, padding: '8px 10px', fontSize: 13, fontFamily: 'inherit', resize: 'none' }} />
+            {disputeErr && <div style={{ fontSize: 12, color: colors.red, marginTop: 6 }}>{disputeErr}</div>}
             <div style={{ fontSize: 11, color: colors.textFaint, marginTop: 10 }}>Our team reviews disputes within 48 hours and notifies both parties.</div>
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 14 }}>
-              <button onClick={() => setDisputeOpen(false)} style={btnGhost}>Cancel</button>
-              <button onClick={() => setDisputeOpen(false)} style={{ height: 34, padding: '0 14px', background: colors.green, border: 'none', borderRadius: 7, fontSize: 12, fontWeight: 600, color: '#fff', fontFamily: 'inherit', cursor: 'pointer' }}>Submit Dispute</button>
+              <button onClick={() => setDisputeOpen(false)} disabled={submittingDispute} style={btnGhost}>Cancel</button>
+              <button onClick={submitDispute} disabled={submittingDispute} style={{ height: 34, padding: '0 14px', background: colors.green, border: 'none', borderRadius: 7, fontSize: 12, fontWeight: 600, color: '#fff', fontFamily: 'inherit', cursor: submittingDispute ? 'default' : 'pointer', opacity: submittingDispute ? 0.7 : 1 }}>{submittingDispute ? 'Submitting…' : 'Submit Dispute'}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Stripe test-mode checkout */}
+      {payOpen && (
+        <div onClick={() => !paying && setPayOpen(false)} style={modalShell}>
+          <div onClick={(e) => e.stopPropagation()} style={{ ...modalCard, maxWidth: 420 }} className="wa-form">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 15, fontWeight: 700 }}>Pay commission</span>
+                <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.06em', color: '#92400E', background: '#FEF9EC', border: '1px solid #F3E2B8', borderRadius: 5, padding: '2px 6px' }}>TEST MODE</span>
+              </div>
+              <span onClick={() => !paying && setPayOpen(false)} style={{ fontSize: 18, color: colors.textFaint, cursor: 'pointer' }}>×</span>
+            </div>
+            <div style={{ fontSize: 12, color: colors.textFaint, marginBottom: 14 }}>Secure payment via Stripe</div>
+
+            <div style={{ background: colors.bg, border: `1px solid ${colors.surfaceMuted}`, borderRadius: 8, padding: '12px 14px', marginBottom: 14 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: colors.textMuted }}><span>{commission?.dealRef || lead.projectName}</span><span style={{ fontWeight: 700, color: colors.ink }}>{sar(commission?.gross)}</span></div>
+              <div style={{ fontSize: 11, color: colors.textFaint, marginTop: 4 }}>Realtor receives {sar(commission?.net)} · platform fee {sar((commission?.gross || 0) - (commission?.net || 0))}</div>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div><div style={modalFieldLabel}>Card number</div><input value={card.number} onChange={(e) => setCard((c) => ({ ...c, number: e.target.value }))} style={inputStyle} /></div>
+              <div style={{ display: 'flex', gap: 10 }}>
+                <div style={{ flex: 1 }}><div style={modalFieldLabel}>Expiry</div><input value={card.exp} onChange={(e) => setCard((c) => ({ ...c, exp: e.target.value }))} style={inputStyle} /></div>
+                <div style={{ flex: 1 }}><div style={modalFieldLabel}>CVC</div><input value={card.cvc} onChange={(e) => setCard((c) => ({ ...c, cvc: e.target.value }))} style={inputStyle} /></div>
+              </div>
+              <div><div style={modalFieldLabel}>Name on card</div><input value={card.name} onChange={(e) => setCard((c) => ({ ...c, name: e.target.value }))} placeholder={lead.projectName ? '' : 'Name on card'} style={inputStyle} /></div>
+            </div>
+
+            <div style={{ fontSize: 10.5, color: colors.textFaint, marginTop: 10, display: 'flex', gap: 6, alignItems: 'center' }}>
+              <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke={colors.textFaint} strokeWidth={2}><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
+              Test mode — no real charge. Use card 4242 4242 4242 4242.
+            </div>
+
+            {payErr && <div style={{ fontSize: 12, color: colors.red, marginTop: 10 }}>{payErr}</div>}
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 16 }}>
+              <button onClick={() => setPayOpen(false)} disabled={paying} style={btnGhost}>Cancel</button>
+              <button onClick={payNow} disabled={paying} style={{ height: 34, padding: '0 16px', background: '#635BFF', border: 'none', borderRadius: 7, fontSize: 12, fontWeight: 600, color: '#fff', fontFamily: 'inherit', cursor: paying ? 'default' : 'pointer', opacity: paying ? 0.7 : 1 }}>{paying ? 'Processing…' : `Pay ${sar(commission?.gross)}`}</button>
             </div>
           </div>
         </div>

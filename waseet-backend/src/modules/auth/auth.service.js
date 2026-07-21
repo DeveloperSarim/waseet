@@ -40,7 +40,8 @@ const publicUser = async (u) => ({
   createdAt: u.createdAt,
 })
 
-export async function register({ role, email, fullName, phone, country, city, avatarKey, userAgent, ip }) {
+export async function register({ role, email, fullName, phone, country, city, avatarKey, userAgent, ip,
+  contactName, website, agency, specialization, languages, experience, licenseType, licenseNumber, licenseExpiry, idType, idNumber }) {
   const existing = await prisma.user.findUnique({ where: { email } })
   if (existing) throw new ApiError(409, 'This email is already registered', 'EMAIL_TAKEN')
 
@@ -52,6 +53,11 @@ export async function register({ role, email, fullName, phone, country, city, av
       avatarKey: avatarKey || null,
       // for developers the display name IS the company name
       companyName: role === 'DEVELOPER' ? fullName : undefined,
+      // developer company details
+      contactName, website,
+      // realtor professional details captured at sign-up
+      agency, specialization, languages, experience,
+      licenseType, licenseNumber, licenseExpiry, idType, idNumber,
     },
   })
   await prisma.auditLog.create({
@@ -127,20 +133,30 @@ export async function uploadRegistrationLogo(file) {
 
 // Whitelisted profile fields a user may edit about themselves. Email/role/status
 // are intentionally NOT here — those are identity/admin-controlled.
-const EDITABLE = ['fullName', 'phone', 'country', 'city', 'companyName', 'contactName', 'website', 'bio', 'agency', 'specialization', 'languages', 'experience', 'bankName', 'iban', 'bankCountry']
+const EDITABLE = ['fullName', 'phone', 'country', 'city', 'companyName', 'contactName', 'website', 'bio', 'agency', 'specialization', 'languages', 'experience', 'licenseType', 'licenseNumber', 'licenseExpiry', 'idType', 'idNumber', 'bankName', 'iban', 'bankCountry']
+
+// license / ID changes invalidate the prior verification → docs go back to review
+const KYC_FIELDS = ['licenseType', 'licenseNumber', 'licenseExpiry', 'idType', 'idNumber']
 
 export async function updateMe(userId, patch) {
+  const before = await prisma.user.findUnique({ where: { id: userId } })
   const data = {}
   for (const k of EDITABLE) {
     if (patch[k] !== undefined) data[k] = patch[k]
   }
   if (patch.notificationPrefs !== undefined) {
-    const current = (await prisma.user.findUnique({ where: { id: userId } }))?.notificationPrefs || {}
-    data.notificationPrefs = { ...current, ...patch.notificationPrefs }
+    data.notificationPrefs = { ...(before?.notificationPrefs || {}), ...patch.notificationPrefs }
   }
   if (Object.keys(data).length === 0) throw new ApiError(400, 'Nothing to update', 'NO_CHANGES')
   const user = await prisma.user.update({ where: { id: userId }, data })
   await prisma.auditLog.create({ data: { actorId: userId, action: 'auth.update_profile', entity: 'User', entityId: userId } })
+
+  // if a KYC field actually changed, send the verified documents back for re-review
+  const kycChanged = before && before.role === 'REALTOR' && KYC_FIELDS.some((k) => data[k] !== undefined && data[k] !== before[k])
+  if (kycChanged) {
+    const { count } = await prisma.document.updateMany({ where: { userId, type: { not: 'PROFILE_PHOTO' }, status: 'VERIFIED' }, data: { status: 'PENDING' } })
+    if (count > 0) await prisma.auditLog.create({ data: { actorId: userId, action: 'auth.kyc_changed', entity: 'User', entityId: userId, meta: { docs: count } } })
+  }
   return await publicUser(user)
 }
 

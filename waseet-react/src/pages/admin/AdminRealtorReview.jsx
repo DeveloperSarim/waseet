@@ -73,12 +73,19 @@ export default function AdminRealtorReview() {
   const doDelete = () => run(() => adminApi.deleteUser(id), 'Account deleted', { goList: true })
   const doEmail = () => run(() => adminApi.emailUser(id, { subject: emailForm.subject, message: emailForm.message }), 'Email sent to realtor')
   const doEdit = () => run(() => adminApi.updateUser(id, editForm), 'Details updated')
+  // verify / reject a KYC document; rejecting suspends the realtor's access
+  const doDocStatus = (docId, status) => run(async () => {
+    let reason
+    if (status === 'REJECTED') { reason = window.prompt('Reason for rejecting this document (realtor will see this):') || undefined }
+    setUser(await adminApi.setDocumentStatus(docId, status, reason))
+  }, status === 'VERIFIED' ? 'Document verified' : 'Document rejected — realtor access paused')
 
   const openEmail = () => { setEmailForm({ subject: '', message: '' }); setModal('email') }
   const openEdit = () => {
     setEditForm({
       fullName: user.fullName || '', phone: user.phone || '', country: user.country || 'SA', city: user.city || '',
       agency: user.agency || '', licenseNumber: user.licenseNumber || '', specialization: user.specialization || '', experience: user.experience || '',
+      languages: user.languages || '', licenseType: user.licenseType || '', licenseExpiry: user.licenseExpiry || '', idType: user.idType || '', idNumber: user.idNumber || '',
     })
     setModal('edit')
   }
@@ -94,6 +101,21 @@ export default function AdminRealtorReview() {
     { label: 'Email', value: user.email || '—' },
     { label: 'Phone', value: user.phone || '—' },
     { label: 'WhatsApp', value: user.phone || '—' },
+  ] : []
+
+  const professional = user ? [
+    { label: 'Agency', value: user.agency || '—' },
+    { label: 'Specialization', value: user.specialization || '—' },
+    { label: 'Languages', value: user.languages || '—' },
+    { label: 'Experience', value: user.experience || '—' },
+  ] : []
+
+  const licenseInfo = user ? [
+    { label: 'License Type', value: user.licenseType || '—' },
+    { label: 'License Number', value: user.licenseNumber || '—' },
+    { label: 'ID Type', value: user.idType || '—' },
+    { label: 'ID Number', value: user.idNumber || '—' },
+    { label: 'License Expiry', value: (() => { const v = user.licenseExpiry; if (!v) return '—'; const d = new Date(v); return (!Number.isNaN(d.getTime()) && /^\d{4}-\d{2}/.test(v)) ? d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : v })() },
   ] : []
 
   const stats = [
@@ -185,6 +207,32 @@ export default function AdminRealtorReview() {
               </div>
             </div>
 
+            {/* Professional info */}
+            <div style={card}>
+              <div style={sectionLabel}>Professional Information</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px 16px' }}>
+                {professional.map((f) => (
+                  <div key={f.label} style={f.label === 'Specialization' || f.label === 'Languages' ? { gridColumn: 'span 2' } : null}>
+                    <div style={fieldLabel}>{f.label}</div>
+                    <div style={{ fontSize: 13, color: colors.textMuted }}>{f.value}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* License & verification */}
+            <div style={card}>
+              <div style={sectionLabel}>License &amp; Verification</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px 16px' }}>
+                {licenseInfo.map((f) => (
+                  <div key={f.label}>
+                    <div style={fieldLabel}>{f.label}</div>
+                    <div style={{ fontSize: 13, color: colors.textMuted }}>{f.value}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
             {/* Documents */}
             <div style={{ ...card, marginBottom: 0 }}>
               <div style={{ ...sectionLabel, marginBottom: 8 }}>Documents</div>
@@ -202,12 +250,21 @@ export default function AdminRealtorReview() {
                       <div style={{ fontSize: 11, color: colors.textFaint }}>{doc.filename} · {docMeta(doc)}</div>
                     </div>
                   </div>
-                  <span style={{ background: colors.amberTint, color: colors.amberText, border: `1px solid ${colors.amberTintBorder}`, borderRadius: 999, padding: '2px 8px', fontSize: 10, fontWeight: 600 }}>{doc.status === 'VERIFIED' ? 'Verified ✓' : doc.status === 'REJECTED' ? 'Rejected' : 'Pending'}</span>
+                  {(() => {
+                    const s = doc.status === 'VERIFIED' ? { bg: colors.greenTint, fg: colors.greenDark, bd: colors.greenTintBorder, label: 'Verified ✓' } : doc.status === 'REJECTED' ? { bg: colors.redTint, fg: colors.red, bd: colors.redTintBorder, label: 'Rejected' } : { bg: colors.amberTint, fg: colors.amberText, bd: colors.amberTintBorder, label: 'Pending' }
+                    return <span style={{ background: s.bg, color: s.fg, border: `1px solid ${s.bd}`, borderRadius: 999, padding: '2px 8px', fontSize: 10, fontWeight: 600 }}>{s.label}</span>
+                  })()}
                   <div style={{ display: 'flex', gap: 6 }}>
                     <span onClick={() => setPreviewDoc({ ...doc, title: DOC_LABEL[doc.type] || doc.type })} style={{ display: 'flex', gap: 4, alignItems: 'center', fontSize: 11, color: colors.greenDark, border: `1px solid ${colors.greenTintBorder}`, background: colors.greenTint, borderRadius: 5, padding: '3px 8px', cursor: 'pointer' }}>
                       <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke={colors.greenDark} strokeWidth={1.8}><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z" /><circle cx="12" cy="12" r="3" /></svg>Preview
                     </span>
                     <a href={doc.url} target="_blank" rel="noreferrer" download style={{ fontSize: 11, color: colors.textMuted, border: `1px solid ${colors.border}`, background: '#fff', borderRadius: 5, padding: '3px 8px', cursor: 'pointer', textDecoration: 'none' }}>Download ↓</a>
+                    {doc.type !== 'PROFILE_PHOTO' && doc.status !== 'VERIFIED' && (
+                      <span onClick={() => !working && doDocStatus(doc.id, 'VERIFIED')} style={{ fontSize: 11, color: '#fff', background: colors.green, borderRadius: 5, padding: '3px 8px', cursor: working ? 'default' : 'pointer', fontWeight: 600 }}>Verify ✓</span>
+                    )}
+                    {doc.type !== 'PROFILE_PHOTO' && doc.status !== 'REJECTED' && (
+                      <span onClick={() => !working && doDocStatus(doc.id, 'REJECTED')} style={{ fontSize: 11, color: colors.red, border: `1px solid ${colors.redTintBorder}`, background: '#fff', borderRadius: 5, padding: '3px 8px', cursor: working ? 'default' : 'pointer', fontWeight: 600 }}>Reject</span>
+                    )}
                   </div>
                 </div>
               ))}
@@ -340,7 +397,7 @@ export default function AdminRealtorReview() {
           <div onClick={(e) => e.stopPropagation()} style={{ ...modalCardBase, maxWidth: 520 }} className="wa-form">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}><span style={{ fontSize: 15, fontWeight: 700 }}>Edit realtor details</span><span onClick={close} style={{ fontSize: 18, color: colors.textFaint, cursor: 'pointer' }}>×</span></div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px 14px' }}>
-              {[['Full name', 'fullName', 'text'], ['Phone', 'phone', 'text'], ['City', 'city', 'text'], ['Agency', 'agency', 'text'], ['License number', 'licenseNumber', 'text'], ['Specialization', 'specialization', 'text'], ['Experience', 'experience', 'text']].map(([label, key]) => (
+              {[['Full name', 'fullName', 'text'], ['Phone', 'phone', 'text'], ['City', 'city', 'text'], ['Agency', 'agency', 'text'], ['Specialization', 'specialization', 'text'], ['Languages', 'languages', 'text'], ['Experience', 'experience', 'text'], ['License type', 'licenseType', 'text'], ['License number', 'licenseNumber', 'text'], ['License expiry', 'licenseExpiry', 'text'], ['ID type', 'idType', 'text'], ['ID number', 'idNumber', 'text']].map(([label, key]) => (
                 <div key={key}>
                   <div style={{ fontSize: 11, color: colors.textFaint, marginBottom: 4 }}>{label}</div>
                   <input value={editForm[key] || ''} onChange={setEf(key)} style={{ width: '100%', height: 34, border: `1px solid ${colors.border}`, borderRadius: 7, padding: '0 10px', fontSize: 13, fontFamily: 'inherit' }} />

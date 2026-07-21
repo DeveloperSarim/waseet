@@ -24,7 +24,7 @@ const phoneMeta = { 'Saudi Arabia': { flag: '🇸🇦', code: '+966' }, UAE: { f
 
 export default function RealtorRegistration() {
   const navigate = useNavigate()
-  const [form, setForm] = useState({ fullName: '', country: 'Saudi Arabia', city: '', email: '', phone: '' })
+  const [form, setForm] = useState({ fullName: '', country: 'Saudi Arabia', city: '', email: '', phone: '', idNumber: '', licenseNumber: '', licenseExpiry: '', experience: '', agency: '' })
   const [profilePhoto, setProfilePhoto] = useState(null)
   const [falLicense, setFalLicense] = useState(null)
   const [nationalId, setNationalId] = useState(null)
@@ -53,12 +53,23 @@ export default function RealtorRegistration() {
 
     setLoading(true)
     try {
+      const languages = langNames.filter((_, i) => langs[i]).join(' · ')
+      const specialization = specNames.filter((_, i) => specs[i]).join(' · ')
       const res = await authApi.registerRealtor({
         email: form.email.trim(),
         fullName: form.fullName.trim(),
         phone: `${pm.code} ${form.phone.trim()}`,
         country: countryMap[form.country],
         city: form.city.trim(),
+        agency: form.agency.trim() || undefined,
+        licenseType: form.licenseNumber.trim() ? 'FAL License' : undefined,
+        licenseNumber: form.licenseNumber.trim() || undefined,
+        licenseExpiry: form.licenseExpiry.trim() || undefined,
+        idType: form.idNumber.trim() ? 'Iqama / National ID' : undefined,
+        idNumber: form.idNumber.trim() || undefined,
+        specialization: specialization || undefined,
+        languages: languages || undefined,
+        experience: form.experience && form.experience !== 'Select' ? form.experience : undefined,
       })
       setAccessToken(res.accessToken)
       if (profilePhoto) await documentsApi.upload('PROFILE_PHOTO', profilePhoto)
@@ -169,7 +180,7 @@ export default function RealtorRegistration() {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
             <div>
               <Label>Country *</Label>
-              <SelectInput value={form.country} onChange={set('country')}><option>Saudi Arabia</option><option>UAE</option><option>Pakistan</option></SelectInput>
+              <SelectInput value={form.country} onChange={set('country')}><option>Saudi Arabia</option></SelectInput>
             </div>
             <div>
               <Label>City *</Label>
@@ -185,7 +196,7 @@ export default function RealtorRegistration() {
           </div>
           <div style={{ marginBottom: 10 }}>
             <Label>Iqama / National ID *</Label>
-            <TextInput placeholder="1XXXXXXXXX" />
+            <TextInput value={form.idNumber} onChange={set('idNumber')} placeholder="1XXXXXXXXX" />
             <div style={{ fontSize: 12, color: colors.textFaint, marginTop: 4 }}>10 digits starting with 1 or 2</div>
             <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 6 }}>
               <Icon name="lock" size={13} color={colors.textFaint} strokeWidth={1.8} />
@@ -209,16 +220,16 @@ export default function RealtorRegistration() {
         <Section num="02" title="Professional information">
           <div style={{ marginBottom: 12 }}>
             <Label icon="info">FAL License Number *</Label>
-            <TextInput placeholder="FAL-XXXX-XXXXX" />
+            <TextInput value={form.licenseNumber} onChange={set('licenseNumber')} placeholder="FAL-XXXX-XXXXX" />
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
             <div>
               <Label>License Expiry *</Label>
-              <TextInput placeholder="MM / YYYY" />
+              <TextInput type="date" value={form.licenseExpiry} onChange={set('licenseExpiry')} />
             </div>
             <div>
               <Label>Years of Experience *</Label>
-              <SelectInput defaultValue="Select"><option>Select</option><option>Less than 1 year</option><option>1–3 years</option><option>3–5 years</option><option>5–10 years</option><option>10+ years</option></SelectInput>
+              <SelectInput value={form.experience} onChange={set('experience')}><option>Select</option><option>Less than 1 year</option><option>1–3 years</option><option>3–5 years</option><option>5–10 years</option><option>10+ years</option></SelectInput>
             </div>
           </div>
           <div style={{ marginBottom: 12 }}>
@@ -231,7 +242,7 @@ export default function RealtorRegistration() {
           </div>
           <div style={{ marginBottom: 12 }}>
             <Label>Agency / Company Name</Label>
-            <TextInput placeholder="Al-Rashid Real Estate" />
+            <TextInput value={form.agency} onChange={set('agency')} placeholder="Al-Rashid Real Estate" />
             <Hint>Leave blank if independent</Hint>
           </div>
           <div>

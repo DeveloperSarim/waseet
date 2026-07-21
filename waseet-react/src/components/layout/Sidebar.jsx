@@ -5,6 +5,7 @@ import { useHover } from '../../hooks/useHover'
 import { useAuth } from '../../context/AuthContext'
 import { initials as toInitials } from '../../lib/adminFormat'
 import { useDrawer } from './DrawerContext'
+import { useCounts } from './CountsContext'
 
 function NavIcon({ d, color }) {
   return (
@@ -89,7 +90,14 @@ export function Sidebar({ config, className }) {
   const navigate = useNavigate()
   const { user, logout } = useAuth() || {}
   const drawer = useDrawer()
+  const counts = useCounts()
   const closeDrawer = () => drawer?.setOpen(false)
+  // resolve a nav item's badge: explicit static badge, else a live count by key
+  const badgeFor = (item) => {
+    if (item.badge != null) return item.badge
+    if (item.badgeKey) { const n = counts?.[item.badgeKey]; return n ? String(n) : null }
+    return null
+  }
   const dark = config.theme === 'dark'
   const border = dark ? '1px solid rgba(255,255,255,0.08)' : `1px solid ${colors.border}`
 
@@ -180,7 +188,7 @@ export function Sidebar({ config, className }) {
               {group.label}
             </div>
             {group.items.map((item) => (
-              <NavItem key={item.to} item={item} active={item.to === activeTo} dark={dark} onNav={closeDrawer} />
+              <NavItem key={item.to} item={{ ...item, badge: badgeFor(item) }} active={item.to === activeTo} dark={dark} onNav={closeDrawer} />
             ))}
           </div>
         ))}

@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { colors } from '../../theme/tokens'
 import { Topbar } from '../../components/layout/Topbar'
-import { developerApi } from '../../lib/api'
+import { developerApi, geoApi } from '../../lib/api'
 import { MapPicker } from '../../components/MapPicker'
 import { ProjectProgressEditor } from '../../components/ProjectProgressEditor'
 
@@ -86,6 +86,20 @@ export default function EditProject() {
     timeline: defaultTimeline,
     paymentPlan: defaultPaymentPlan,
   })
+  const [devStatus, setDevStatus] = useState('Under Construction')
+  const [handover, setHandover] = useState('')
+  const [floors, setFloors] = useState('')
+  const [totalUnits, setTotalUnits] = useState('')
+  const [geoCities, setGeoCities] = useState([])
+  const [areaDistricts, setAreaDistricts] = useState([])
+  useEffect(() => { geoApi.cities().then((l) => setGeoCities(Array.isArray(l) ? l : [])).catch(() => {}) }, [])
+  useEffect(() => {
+    const sel = geoCities.find((c) => c.name === city)
+    if (!sel) { setAreaDistricts([]); return }
+    let active = true
+    geoApi.districts(sel.id).then((d) => { if (active) setAreaDistricts(Array.isArray(d) ? d : []) }).catch(() => { if (active) setAreaDistricts([]) })
+    return () => { active = false }
+  }, [city, geoCities])
 
   useEffect(() => {
     let alive = true
@@ -101,6 +115,10 @@ export default function EditProject() {
         setDescription(p.description || '')
         setImageUrl(p.image || null)
         setFloorPlans(p.details?.floorPlans || [])
+        setDevStatus(p.details?.constructionStatus || 'Under Construction')
+        setHandover(p.details?.handover || '')
+        setFloors(p.details?.floors != null ? String(p.details.floors) : '')
+        setTotalUnits(p.details?.totalUnits != null ? String(p.details.totalUnits) : '')
         setProgress({
           progressPercent: p.details?.progressPercent ?? 0,
           timeline: Array.isArray(p.details?.timeline) && p.details.timeline.length ? p.details.timeline : defaultTimeline,
@@ -184,6 +202,10 @@ export default function EditProject() {
       description: description.trim(),
       details: {
         ...(project.details || {}),
+        constructionStatus: devStatus,
+        handover: devStatus === 'Ready' ? '' : handover,
+        floors: floors ? Number(floors) || null : null,
+        totalUnits: totalUnits ? Number(totalUnits) || null : null,
         floorPlans: floorPlans.map((f) => ({ label: f.label, key: f.key, filename: f.filename, size: f.size })),
         progressPercent: Number(progress.progressPercent) || 0,
         timeline: progress.timeline,
@@ -321,15 +343,21 @@ export default function EditProject() {
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 10, marginBottom: 12 }}>
                   <div><label style={fieldLabel}>Project Type *</label><div style={selectBox}>{ptype || '—'}{chevron}</div></div>
-                  <div><label style={fieldLabel}>Development Status *</label><div style={selectBox}>Under Construction{chevron}</div></div>
+                  <div><label style={fieldLabel}>Development Status *</label>
+                    <select value={devStatus} onChange={(e) => setDevStatus(e.target.value)} style={{ ...inputBase, border: `1px solid ${colors.border}`, background: '#fff' }}><option>Off-plan</option><option>Under Construction</option><option>Ready</option></select>
+                  </div>
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 10, marginBottom: 12 }}>
-                  <div><label style={fieldLabel}>Expected Handover *</label><input defaultValue="Q4 2027" style={{ ...inputBase, border: `1px solid ${colors.border}` }} /></div>
-                  <div><label style={fieldLabel}>Completion %</label><input defaultValue="68" style={{ ...inputBase, border: `1px solid ${colors.border}` }} /></div>
+                  {devStatus === 'Ready' ? (
+                    <div><label style={fieldLabel}>Handover</label><input value="Delivered — ready to move in" disabled style={{ ...inputBase, border: `1px solid ${colors.border}`, background: colors.surfaceAlt, color: colors.textFaint }} /></div>
+                  ) : (
+                    <div><label style={fieldLabel}>Expected Handover *</label><input value={handover} onChange={(e) => setHandover(e.target.value)} placeholder="Q4 2027" style={{ ...inputBase, border: `1px solid ${colors.border}` }} /></div>
+                  )}
+                  <div><label style={fieldLabel}>Completion %</label><input value={progress.progressPercent} onChange={(e) => setProgress((p) => ({ ...p, progressPercent: e.target.value.replace(/[^\d]/g, '') }))} placeholder="68" style={{ ...inputBase, border: `1px solid ${colors.border}` }} /></div>
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 10 }}>
-                  <div><label style={fieldLabel}>Total Floors</label><input defaultValue="12" style={{ ...inputBase, border: `1px solid ${colors.border}` }} /></div>
-                  <div><label style={fieldLabel}>Total Units</label><input defaultValue="96" style={{ ...inputBase, border: `1px solid ${colors.border}` }} /></div>
+                  <div><label style={fieldLabel}>Total Floors</label><input value={floors} onChange={(e) => setFloors(e.target.value)} placeholder="12" style={{ ...inputBase, border: `1px solid ${colors.border}` }} /></div>
+                  <div><label style={fieldLabel}>Total Units</label><input value={totalUnits} onChange={(e) => setTotalUnits(e.target.value)} placeholder="96" style={{ ...inputBase, border: `1px solid ${colors.border}` }} /></div>
                 </div>
               </div>
 
@@ -337,7 +365,13 @@ export default function EditProject() {
                 <div style={cardLabel}>Location</div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 10, marginBottom: 12 }}>
                   <div><label style={fieldLabel}>City</label><div style={selectBox}>{city || '—'}{chevron}</div></div>
-                  <div><label style={fieldLabel}>Area</label><input value={area} onChange={(e) => setArea(e.target.value)} style={{ ...inputBase, border: `1px solid ${colors.border}` }} /></div>
+                  <div><label style={fieldLabel}>Area</label>
+                    <select value={area} onChange={(e) => setArea(e.target.value)} disabled={areaDistricts.length === 0} style={{ ...inputBase, border: `1px solid ${colors.border}`, background: '#fff', color: area ? colors.ink : colors.textFaint }}>
+                      <option value="">{areaDistricts.length ? 'Select area' : 'No areas for this city'}</option>
+                      {area && !areaDistricts.some((d) => d.name === area) && <option value={area}>{area}</option>}
+                      {areaDistricts.map((d) => <option key={d.id} value={d.name}>{d.name}</option>)}
+                    </select>
+                  </div>
                 </div>
                 <div style={{ marginBottom: 12 }}><label style={fieldLabel}>Address</label><input value={address} onChange={(e) => setAddress(e.target.value)} style={{ ...inputBase, border: `1px solid ${colors.border}` }} /></div>
                 <div style={{ fontSize: 11, fontWeight: 600, color: colors.textFaint, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 8 }}>Pin location on map</div>

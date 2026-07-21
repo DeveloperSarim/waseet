@@ -45,18 +45,24 @@ export function createApp() {
   app.use('/health', healthRouter)
   // public status (no auth) — used by the client to detect maintenance mode
   app.get('/api/v1/status', async (req, res) => {
+    const buildInfo = (m) => ({
+      message: m.message,
+      startedAt: m.startedAt,
+      etaMinutes: m.etaMinutes,
+      expectedBack: m.startedAt ? new Date(new Date(m.startedAt).getTime() + (m.etaMinutes || 30) * 60000).toISOString() : null,
+      items: m.items || [],
+    })
     try {
-      const m = await getSection('maintenance')
-      if (!m.enabled) return res.json({ maintenance: false })
-      const expectedBack = m.startedAt
-        ? new Date(new Date(m.startedAt).getTime() + (m.etaMinutes || 30) * 60000).toISOString()
-        : null
+      const [m, mp] = await Promise.all([getSection('maintenance'), getSection('marketplaceMaintenance')])
       res.json({
-        maintenance: true,
-        info: { message: m.message, startedAt: m.startedAt, etaMinutes: m.etaMinutes, expectedBack, items: m.items || [] },
+        maintenance: !!m.enabled,
+        info: m.enabled ? buildInfo(m) : undefined,
+        // full-platform maintenance implies the marketplace is down too
+        marketplaceMaintenance: !!m.enabled || !!mp.enabled,
+        marketplaceInfo: m.enabled ? buildInfo(m) : mp.enabled ? buildInfo(mp) : undefined,
       })
     } catch {
-      res.json({ maintenance: false })
+      res.json({ maintenance: false, marketplaceMaintenance: false })
     }
   })
   app.use('/api/v1/auth', authRouter)

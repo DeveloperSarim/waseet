@@ -38,6 +38,7 @@ import RealtorBrowse from './pages/realtor/RealtorBrowse'
 import BankDetails from './pages/realtor/BankDetails'
 import NotificationPreferences from './pages/realtor/NotificationPreferences'
 import CommissionDetail from './pages/realtor/CommissionDetail'
+import PortalDisputes from './pages/shared/PortalDisputes'
 
 // Developer portal
 import DeveloperDashboard from './pages/developer/DeveloperDashboard'
@@ -63,6 +64,8 @@ import AdminDisputeDetail from './pages/admin/AdminDisputeDetail'
 import AdminSettings from './pages/admin/AdminSettings'
 import AdminAnnouncements from './pages/admin/AdminAnnouncements'
 import AdminLeads from './pages/admin/AdminLeads'
+import AdminLeadDetail from './pages/admin/AdminLeadDetail'
+import AdminWithdrawals from './pages/admin/AdminWithdrawals'
 import AdminCommissions from './pages/admin/AdminCommissions'
 import AdminCommissionDetail from './pages/admin/AdminCommissionDetail'
 import AdminDataExport from './pages/admin/AdminDataExport'
@@ -78,8 +81,9 @@ export default function App() {
       {/* ---------- Public site (shared nav + footer) ---------- */}
       <Route element={<PublicLayout />}>
         <Route path="/" element={<Landing />} />
-        {/* private marketplace — keeps the public nav/footer but is login-gated */}
-        <Route path="/marketplace" element={<RequireAuth><Marketplace /></RequireAuth>} />
+        {/* private marketplace — keeps the public nav/footer but is login-gated.
+            `embedded` so the maintenance screen doesn't add its own nav/footer. */}
+        <Route path="/marketplace" element={<RequireAuth embedded><Marketplace /></RequireAuth>} />
         <Route path="/legal/:doc" element={<Legal />} />
       </Route>
 
@@ -125,6 +129,7 @@ export default function App() {
         <Route path="/realtor/recently-viewed" element={<RecentlyViewed />} />
         <Route path="/realtor/profile" element={<RealtorProfile />} />
         <Route path="/realtor/notifications" element={<Notifications />} />
+        <Route path="/realtor/disputes" element={<PortalDisputes />} />
         <Route path="/realtor/settings" element={<RealtorSettings />} />
       </Route>
 
@@ -142,6 +147,7 @@ export default function App() {
         <Route path="/developer/network" element={<RealtorNetwork />} />
         <Route path="/developer/profile" element={<DeveloperProfile />} />
         <Route path="/developer/notifications" element={<DeveloperNotifications />} />
+        <Route path="/developer/disputes" element={<PortalDisputes />} />
         <Route path="/developer/settings" element={<DeveloperSettings />} />
       </Route>
 
@@ -156,8 +162,10 @@ export default function App() {
         <Route path="/admin/projects/:id" element={<AdminProjectReview />} />
         <Route path="/admin/projects/:id/edit" element={<AdminProjectEdit />} />
         <Route path="/admin/leads" element={<AdminLeads />} />
+        <Route path="/admin/leads/:id" element={<AdminLeadDetail />} />
         <Route path="/admin/commissions" element={<AdminCommissions />} />
         <Route path="/admin/commissions/:id" element={<AdminCommissionDetail />} />
+        <Route path="/admin/withdrawals" element={<AdminWithdrawals />} />
         <Route path="/admin/disputes" element={<AdminDisputes />} />
         <Route path="/admin/disputes/:id" element={<AdminDisputeDetail />} />
         <Route path="/admin/announcements" element={<AdminAnnouncements />} />

@@ -75,6 +75,11 @@ adminRouter.post('/users/:id/email', async (req, res, next) => {
   try { res.json({ result: await svc.emailUser(req.params.id, req.user.id, req.body || {}) }) } catch (e) { next(e) }
 })
 
+// verify / reject a KYC document (reject suspends an active realtor)
+adminRouter.post('/documents/:id/status', async (req, res, next) => {
+  try { res.json({ user: await svc.setDocumentStatus(req.params.id, req.user.id, req.body?.status, req.body?.reason) }) } catch (e) { next(e) }
+})
+
 // ---- dashboard + domain screens ----
 const H = (fn) => async (req, res, next) => { try { res.json(await fn(req)) } catch (e) { next(e) } }
 
@@ -85,11 +90,19 @@ adminRouter.post('/projects/image', upload.single('file'), H((req) => svc.upload
 adminRouter.get('/projects/:id', H((req) => svc.getProjectDetail(req.params.id).then((project) => ({ project }))))
 adminRouter.patch('/projects/:id', H((req) => svc.updateProject(req.user.id, req.params.id, req.body || {}).then((project) => ({ project }))))
 adminRouter.post('/projects/:id/status', H((req) => svc.setProjectStatus(req.user.id, req.params.id, req.body?.status).then((r) => ({ result: r }))))
+adminRouter.post('/projects/:id/feature', H((req) => svc.setProjectFeatured(req.user.id, req.params.id, req.body?.featured).then((r) => ({ result: r }))))
 
 adminRouter.get('/leads', H((req) => svc.listLeads(req.query).then((leads) => ({ leads }))))
+adminRouter.get('/leads/:id', H((req) => svc.getLeadDetail(req.params.id).then((lead) => ({ lead }))))
 
 adminRouter.get('/commissions', H((req) => svc.listCommissions(req.query)))
 adminRouter.get('/commissions/:id', H((req) => svc.getCommissionDetail(req.params.id).then((commission) => ({ commission }))))
+adminRouter.post('/commissions/:id/disburse', H((req) => svc.disburseCommission(req.params.id, req.user.id).then((commission) => ({ commission }))))
+
+// withdrawals
+adminRouter.get('/withdrawals', H((req) => svc.listWithdrawals(req.query)))
+adminRouter.post('/withdrawals/:id/mark-paid', H((req) => svc.markWithdrawalPaid(req.params.id, req.user.id).then((result) => ({ result }))))
+adminRouter.post('/withdrawals/:id/reject', H((req) => svc.rejectWithdrawal(req.params.id, req.user.id, req.body?.reason).then((result) => ({ result }))))
 
 adminRouter.get('/disputes', H((req) => svc.listDisputes(req.query)))
 adminRouter.get('/disputes/:id', H((req) => svc.getDisputeDetail(req.params.id).then((dispute) => ({ dispute }))))

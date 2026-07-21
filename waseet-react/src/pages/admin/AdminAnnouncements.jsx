@@ -99,7 +99,7 @@ export default function AdminAnnouncements() {
     if (sending) return
     setSending(true); setSendError('')
     try {
-      const res = await adminApi.createAnnouncement({ title: subject.trim(), body: message.trim(), audience: audienceMap[recipient] })
+      const res = await adminApi.createAnnouncement({ title: subject.trim(), body: message.trim(), audience: audienceMap[recipient], link: link.trim() || undefined })
       setSentRecipients(res?.recipients ?? 0)
       setSent(true)
       setToast(`Sent to ${res?.recipients ?? 0} recipient${res?.recipients === 1 ? '' : 's'}`)

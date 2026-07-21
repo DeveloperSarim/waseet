@@ -1,4 +1,4 @@
-import { isMaintenance } from '../lib/settings.js'
+import { isMaintenance, isMarketplaceMaintenance } from '../lib/settings.js'
 import { redis } from '../lib/redis.js'
 import { ApiError } from './error.js'
 
@@ -10,6 +10,20 @@ export async function maintenanceGuard(req, res, next) {
     if (req.user?.role === 'ADMIN') return next()
     if (await isMaintenance()) {
       throw new ApiError(503, 'The platform is under maintenance. Please try again shortly.', 'MAINTENANCE')
+    }
+    next()
+  } catch (e) {
+    next(e)
+  }
+}
+
+// Blocks only the marketplace browsing endpoints while the marketplace is in
+// maintenance (or the whole platform is). The rest of each portal stays online.
+export async function marketplaceGuard(req, res, next) {
+  try {
+    if (req.user?.role === 'ADMIN') return next()
+    if (await isMarketplaceMaintenance()) {
+      throw new ApiError(503, 'The marketplace is under maintenance. Please try again shortly.', 'MARKETPLACE_MAINTENANCE')
     }
     next()
   } catch (e) {

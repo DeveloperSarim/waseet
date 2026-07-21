@@ -27,6 +27,7 @@ const D = {
   mail: 'M3 5h18v14H3zM3 7l9 6 9-6',
   export: 'M12 3v12M7 10l5 5 5-5M5 21h14',
   store: 'M3 9l1.5-5h15L21 9M4 9h16v10a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V9zM3 9h18M9 13h6',
+  bank: 'M3 21h18M3 10h18M5 6l7-3 7 3M4 10v11M20 10v11M8 14v3M12 14v3M16 14v3',
 }
 
 export const navConfig = {
@@ -40,9 +41,9 @@ export const navConfig = {
         label: 'Main',
         items: [
           { label: 'Dashboard', to: '/realtor', d: D.dashboard },
-          { label: 'Browse Projects', to: '/realtor/browse', d: D.search },
-          { label: 'My Leads', to: '/realtor/leads', d: D.clipboard, badge: '3' },
+          { label: 'My Leads', to: '/realtor/leads', d: D.clipboard, badgeKey: 'leads' },
           { label: 'Commissions', to: '/realtor/commissions', d: D.coin },
+          { label: 'Disputes', to: '/realtor/disputes', d: D.dispute },
           { label: 'Saved Projects', to: '/realtor/saved', d: D.bookmark },
           { label: 'Marketplace', to: '/marketplace', d: D.store },
         ],
@@ -51,7 +52,7 @@ export const navConfig = {
         label: 'Account',
         items: [
           { label: 'My Profile', to: '/realtor/profile', d: D.user },
-          { label: 'Notifications', to: '/realtor/notifications', d: D.bell, badge: '2' },
+          { label: 'Notifications', to: '/realtor/notifications', d: D.bell, badgeKey: 'notifications' },
           { label: 'Settings', to: '/realtor/settings', d: D.gear },
         ],
       },
@@ -69,16 +70,18 @@ export const navConfig = {
         items: [
           { label: 'Dashboard', to: '/developer', d: D.dashboard },
           { label: 'My Projects', to: '/developer/projects', d: D.building },
-          { label: 'All Leads', to: '/developer/leads', d: D.clipboard, badge: '12' },
+          { label: 'All Leads', to: '/developer/leads', d: D.clipboard, badgeKey: 'leads' },
           { label: 'Commissions', to: '/developer/commissions', d: D.coin },
+          { label: 'Disputes', to: '/developer/disputes', d: D.dispute },
           { label: 'Realtor Network', to: '/developer/network', d: D.users },
+          { label: 'Marketplace', to: '/marketplace', d: D.store },
         ],
       },
       {
         label: 'Account',
         items: [
           { label: 'Company Profile', to: '/developer/profile', d: D.user },
-          { label: 'Notifications', to: '/developer/notifications', d: D.bell, badge: '1' },
+          { label: 'Notifications', to: '/developer/notifications', d: D.bell, badgeKey: 'notifications' },
           { label: 'Settings', to: '/developer/settings', d: D.gear },
         ],
       },
@@ -98,6 +101,7 @@ export const navConfig = {
           { label: 'Developers', to: '/admin/developers', d: D.building, badge: '3' },
           { label: 'Realtors', to: '/admin/realtors', d: D.usersSolid, badge: '8' },
           { label: 'Projects', to: '/admin/projects', d: D.home, badge: '2' },
+          { label: 'Marketplace', to: '/marketplace', d: D.store },
         ],
       },
       {
@@ -105,6 +109,7 @@ export const navConfig = {
         items: [
           { label: 'All Leads', to: '/admin/leads', d: D.clipboard },
           { label: 'Commissions', to: '/admin/commissions', d: D.coin },
+          { label: 'Withdrawals', to: '/admin/withdrawals', d: D.bank },
           { label: 'Disputes', to: '/admin/disputes', d: D.dispute, badge: '2', badgeRed: true },
         ],
       },

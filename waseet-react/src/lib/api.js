@@ -100,6 +100,7 @@ export const adminApi = {
   reactivateUser: (id) => request(`/admin/users/${id}/reactivate`, { method: 'POST', auth: true }).then((d) => d.result),
   banUser: (id, payload) => request(`/admin/users/${id}/ban`, { method: 'POST', auth: true, body: payload }).then((d) => d.result),
   sendPasswordReset: (id) => request(`/admin/users/${id}/password-reset`, { method: 'POST', auth: true }).then((d) => d.result),
+  setDocumentStatus: (docId, status, reason) => request(`/admin/documents/${docId}/status`, { method: 'POST', auth: true, body: { status, reason } }).then((d) => d.user),
   uploadUserAvatar: async (id, file) => {
     const fd = new FormData()
     fd.append('file', file)
@@ -128,9 +129,15 @@ export const adminApi = {
     return data
   },
   setProjectStatus: (id, status) => request(`/admin/projects/${id}/status`, { method: 'POST', auth: true, body: { status } }).then((d) => d.result),
+  setProjectFeatured: (id, featured) => request(`/admin/projects/${id}/feature`, { method: 'POST', auth: true, body: { featured } }).then((d) => d.result),
   listLeads: (params = {}) => request(`/admin/leads${qstr(params)}`, { auth: true }).then((d) => d.leads),
+  getLead: (id) => request(`/admin/leads/${id}`, { auth: true }).then((d) => d.lead),
   listCommissions: (params = {}) => request(`/admin/commissions${qstr(params)}`, { auth: true }),
   getCommission: (id) => request(`/admin/commissions/${id}`, { auth: true }).then((d) => d.commission),
+  disburseCommission: (id) => request(`/admin/commissions/${id}/disburse`, { method: 'POST', auth: true }).then((d) => d.commission),
+  listWithdrawals: (params = {}) => request(`/admin/withdrawals${qstr(params)}`, { auth: true }),
+  markWithdrawalPaid: (id) => request(`/admin/withdrawals/${id}/mark-paid`, { method: 'POST', auth: true }).then((d) => d.result),
+  rejectWithdrawal: (id, reason) => request(`/admin/withdrawals/${id}/reject`, { method: 'POST', auth: true, body: { reason } }).then((d) => d.result),
   listDisputes: (params = {}) => request(`/admin/disputes${qstr(params)}`, { auth: true }),
   getDispute: (id) => request(`/admin/disputes/${id}`, { auth: true }).then((d) => d.dispute),
   resolveDispute: (id, payload) => request(`/admin/disputes/${id}/resolve`, { method: 'POST', auth: true, body: payload }).then((d) => d.result),
@@ -167,7 +174,9 @@ export const developerApi = {
   listLeads: (params = {}) => request(`/developer/leads${qstr(params)}`, { auth: true }).then((d) => d.leads),
   getLead: (id) => request(`/developer/leads/${id}`, { auth: true }).then((d) => d.lead),
   updateLeadStatus: (id, status) => request(`/developer/leads/${id}`, { method: 'PATCH', auth: true, body: { status } }).then((d) => d.lead),
-  closeDeal: (id, gross) => request(`/developer/leads/${id}/close`, { method: 'POST', auth: true, body: { gross } }),
+  closeDeal: (id, gross, closedAt) => request(`/developer/leads/${id}/close`, { method: 'POST', auth: true, body: { gross, closedAt } }),
+  createDispute: (payload) => request('/developer/disputes', { method: 'POST', auth: true, body: payload }).then((d) => d.dispute),
+  listDisputes: () => request('/developer/disputes', { auth: true }).then((d) => d.disputes),
   listCommissions: (params = {}) => request(`/developer/commissions${qstr(params)}`, { auth: true }),
   payCommission: (id) => request(`/developer/commissions/${id}/pay`, { method: 'POST', auth: true }),
   markCommissionFailed: (id, reason) => request(`/developer/commissions/${id}/mark-failed`, { method: 'POST', auth: true, body: { reason } }),
@@ -229,6 +238,8 @@ export const realtorApi = {
   },
   getCommission: (id) => request(`/realtor/commissions/${id}`, { auth: true }).then((d) => d.commission),
   createLead: (payload) => request('/realtor/leads', { method: 'POST', auth: true, body: payload }).then((d) => d.lead),
+  createDispute: (payload) => request('/realtor/disputes', { method: 'POST', auth: true, body: payload }).then((d) => d.dispute),
+  listDisputes: () => request('/realtor/disputes', { auth: true }).then((d) => d.disputes),
   getWallet: () => request('/realtor/wallet', { auth: true }),
   requestWithdrawal: (payload = {}) => request('/realtor/withdrawals', { method: 'POST', auth: true, body: payload }).then((d) => d.withdrawal),
   listNotifications: () => request('/realtor/notifications', { auth: true }),

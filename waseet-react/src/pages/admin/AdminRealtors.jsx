@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { colors } from '../../theme/tokens'
 import { Topbar } from '../../components/layout/Topbar'
+import { FilterMenu } from '../../components/admin/FilterMenu'
 import { adminApi } from '../../lib/api'
 import { STATUS_CAT, countryFlag, initials, joinedLabel, timeAgo, statusCounts } from '../../lib/adminFormat'
 
@@ -12,6 +13,8 @@ const toRow = (u) => ({
   name: u.fullName,
   email: u.email,
   agency: u.agency || u.city || '—',
+  city: u.city || '',
+  createdAt: u.createdAt || null,
   license: u.licenseNumber || '—',
   expiry: '',
   expiryState: 'ok',
@@ -34,8 +37,6 @@ const ST = {
   Rejected: { label: 'Rejected', bg: '#FFF5F5', color: '#991B1B', border: '#FECACA' },
 }
 
-const chevron = <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke={colors.textFaint} strokeWidth={2}><path d="M6 9l6 6 6-6" /></svg>
-
 function CheckBox({ checked, onClick }) {
   return (
     <span onClick={onClick} style={{ width: 18, height: 18, borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, background: checked ? colors.green : '#fff', border: checked ? `1px solid ${colors.green}` : `1.5px solid ${colors.borderStrong}` }}>
@@ -52,6 +53,10 @@ export default function AdminRealtors() {
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
   const [tab, setTab] = useState('All')
+  const [search, setSearch] = useState('')
+  const [badgeF, setBadgeF] = useState('')
+  const [cityF, setCityF] = useState('')
+  const [sortJoined, setSortJoined] = useState('') // '' | 'new' | 'old'
   const [selected, setSelected] = useState({})
   const [bulkApproveOpen, setBulkApproveOpen] = useState(false)
   const [bulkRejectOpen, setBulkRejectOpen] = useState(false)
@@ -78,7 +83,21 @@ export default function AdminRealtors() {
   const counts = statusCounts(data)
 
   const setTabFn = (t) => { setTab(t); setSelected({}) }
-  const visible = tab === 'All' ? data : data.filter((r) => r.cat === tab)
+
+  // distinct filter options built from the loaded rows
+  const badgeOpts = [{ value: '', label: 'All badges' }, ...Array.from(new Set(data.map((r) => r.badge).filter((b) => b && b !== '—'))).sort().map((b) => ({ value: b, label: b }))]
+  const cityOpts = [{ value: '', label: 'All cities' }, ...Array.from(new Set(data.map((r) => r.city).filter(Boolean))).sort().map((c) => ({ value: c, label: c }))]
+  const sortOpts = [{ value: '', label: 'Date joined' }, { value: 'new', label: 'Newest first' }, { value: 'old', label: 'Oldest first' }]
+
+  const q = search.trim().toLowerCase()
+  let visible = tab === 'All' ? data : data.filter((r) => r.cat === tab)
+  if (q) visible = visible.filter((r) => r.name.toLowerCase().includes(q) || (r.email || '').toLowerCase().includes(q))
+  if (badgeF) visible = visible.filter((r) => r.badge === badgeF)
+  if (cityF) visible = visible.filter((r) => r.city === cityF)
+  if (sortJoined) visible = [...visible].sort((a, b) => {
+    const da = new Date(a.createdAt || 0).getTime(), db = new Date(b.createdAt || 0).getTime()
+    return sortJoined === 'new' ? db - da : da - db
+  })
   const visibleIds = visible.map((r) => r.id)
   const allSelected = visibleIds.length > 0 && visibleIds.every((id) => selected[id])
 
@@ -136,7 +155,7 @@ export default function AdminRealtors() {
       />
 
       {/* TABS */}
-      <div style={{ background: '#fff', borderBottom: `1px solid ${colors.border}`, padding: '0 22px', display: 'flex' }}>
+      <div className="pd-tabs" style={{ background: '#fff', borderBottom: `1px solid ${colors.border}`, padding: '0 22px', display: 'flex', overflowX: 'auto' }}>
         {tabDefs.map((id) => {
           const on = tab === id
           const amber = id === 'Pending'
@@ -145,7 +164,7 @@ export default function AdminRealtors() {
           else if (amber) badgeStyle = { background: '#FEF9EC', border: '1px solid #F3E2B8', color: '#92400E' }
           else badgeStyle = { background: colors.surfaceMuted, color: colors.textSoft }
           return (
-            <div key={id} onClick={() => setTabFn(id)} style={{ padding: '11px 16px', fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', whiteSpace: 'nowrap', borderBottom: `2px solid ${on ? colors.ink : 'transparent'}`, color: on ? colors.ink : colors.textSoft, fontWeight: on ? 600 : 400 }}>
+            <div key={id} onClick={() => setTabFn(id)} style={{ padding: '11px 16px', fontSize: 13, cursor: 'pointer', flexShrink: 0, display: 'flex', alignItems: 'center', whiteSpace: 'nowrap', borderBottom: `2px solid ${on ? colors.ink : 'transparent'}`, color: on ? colors.ink : colors.textSoft, fontWeight: on ? 600 : 400 }}>
               {id}
               <span style={{ borderRadius: 999, padding: '1px 6px', fontSize: 10, fontWeight: 600, marginLeft: 5, ...badgeStyle }}>{counts[id]}</span>
             </div>
@@ -154,16 +173,16 @@ export default function AdminRealtors() {
       </div>
 
       {/* FILTER BAR */}
-      <div style={{ background: '#fff', borderBottom: `1px solid ${colors.border}`, padding: '10px 22px', display: 'flex', gap: 8, alignItems: 'center' }}>
+      <div style={{ background: '#fff', borderBottom: `1px solid ${colors.border}`, padding: '10px 22px', display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
         {selectedCount === 0 ? (
           <>
-            <div style={{ flex: 1, maxWidth: 280, position: 'relative' }}>
+            <div style={{ flex: '1 1 220px', maxWidth: 280, minWidth: 160, position: 'relative' }}>
               <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={colors.textFaint} strokeWidth={1.8} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)' }}><circle cx="11" cy="11" r="8" /><path d="M21 21l-4.3-4.3" /></svg>
-              <input placeholder="Search by name or email..." style={{ width: '100%', height: 34, border: `1px solid ${colors.border}`, borderRadius: 7, padding: '0 10px 0 32px', fontSize: 12, fontFamily: 'inherit' }} />
+              <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search by name or email..." style={{ width: '100%', height: 34, border: `1px solid ${colors.border}`, borderRadius: 7, padding: '0 10px 0 32px', fontSize: 12, fontFamily: 'inherit' }} />
             </div>
-            <span style={{ height: 34, padding: '0 12px', border: `1px solid ${colors.border}`, borderRadius: 7, fontSize: 12, color: colors.textMuted, display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', background: '#fff' }}>All badges {chevron}</span>
-            <span style={{ height: 34, padding: '0 12px', border: `1px solid ${colors.border}`, borderRadius: 7, fontSize: 12, color: colors.textMuted, display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', background: '#fff' }}>Country {chevron}</span>
-            <span style={{ height: 34, padding: '0 12px', border: `1px solid ${colors.border}`, borderRadius: 7, fontSize: 12, color: colors.textMuted, display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', background: '#fff' }}>Date joined {chevron}</span>
+            <FilterMenu label="All badges" value={badgeF} options={badgeOpts} onChange={setBadgeF} />
+            <FilterMenu label="City" value={cityF} options={cityOpts} onChange={setCityF} />
+            <FilterMenu label="Date joined" value={sortJoined} options={sortOpts} onChange={setSortJoined} />
           </>
         ) : (
           <div style={{ background: colors.greenTint, border: `1px solid ${colors.greenTintBorder}`, borderRadius: 7, padding: '6px 12px', display: 'flex', gap: 10, alignItems: 'center', width: '100%' }}>

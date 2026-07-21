@@ -591,10 +591,10 @@ export default function Marketplace() {
   const priceLabel = price === 'any' ? 'Price range' : priceOptions.find((o) => o.value === price).label
 
   // Real data slices for the curated listing sections (no fabricated cards).
-  // "Featured" is a stable showcase of ALL live projects — it is NOT tied to the
-  // hero search dropdowns (city / commission / price); only its own type pills.
+  // "Featured" is driven entirely by the admin (Projects → Feature). Only
+  // admin-featured projects show here; if none are featured the rail is empty.
   const featuredProjects = items.filter(
-    (p) => featCat === 'All projects' || (p.type && p.type.toLowerCase().includes(featCat.toLowerCase().replace(/s$/, ''))),
+    (p) => p.featured && (featCat === 'All projects' || (p.type && p.type.toLowerCase().includes(featCat.toLowerCase().replace(/s$/, '')))),
   )
   const exclusiveProjects = [...items].sort((a, b) => (b.commissionPct || 0) - (a.commissionPct || 0)).slice(0, 4)
   const decoCards = items.slice(0, 2) // fanned cards in the dark band
@@ -756,7 +756,7 @@ export default function Marketplace() {
           {loading ? (
             <div style={{ padding: '48px 0', textAlign: 'center', fontSize: 13, color: colors.textFaint }}>Loading projects…</div>
           ) : featuredProjects.length === 0 ? (
-            <div style={{ padding: '48px 0', textAlign: 'center', fontSize: 13, color: colors.textFaint }}>No projects found.</div>
+            <div style={{ padding: '48px 0', textAlign: 'center', fontSize: 13, color: colors.textFaint }}>No featured projects yet. Browse all projects below or check back soon.</div>
           ) : (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 340px))', gap: 16, justifyContent: 'start' }}>
               {featuredProjects.map((p) => (

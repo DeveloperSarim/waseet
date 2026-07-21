@@ -14,10 +14,36 @@ const btnGhost = { height: 34, padding: '0 14px', background: '#fff', border: `1
 const money = (n) => (n == null ? '—' : `SAR ${Number(n).toLocaleString()}`)
 const longDate = (iso) => (iso ? new Date(iso).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }) : '—')
 
+// Minimal dependency-free single-page PDF (Helvetica, ASCII). Returns bytes.
+function makePDF(title, lines) {
+  const esc = (s) => String(s).replace(/([\\()])/g, '\\$1').replace(/[^\x20-\x7E]/g, '')
+  let stream = `BT\n/F1 20 Tf\n60 780 Td\n(${esc(title)}) Tj\n/F1 12 Tf\n`
+  let first = true
+  for (const l of lines) { stream += `0 ${first ? -40 : -20} Td\n(${esc(l)}) Tj\n`; first = false }
+  stream += 'ET'
+  const objs = [
+    '<</Type/Catalog/Pages 2 0 R>>',
+    '<</Type/Pages/Kids[3 0 R]/Count 1>>',
+    '<</Type/Page/Parent 2 0 R/MediaBox[0 0 595 842]/Resources<</Font<</F1 4 0 R>>>>/Contents 5 0 R>>',
+    '<</Type/Font/Subtype/Type1/BaseFont/Helvetica>>',
+    `<</Length ${stream.length}>>\nstream\n${stream}\nendstream`,
+  ]
+  let pdf = '%PDF-1.4\n'
+  const offsets = []
+  objs.forEach((o, i) => { offsets.push(pdf.length); pdf += `${i + 1} 0 obj\n${o}\nendobj\n` })
+  const xref = pdf.length
+  pdf += `xref\n0 ${objs.length + 1}\n0000000000 65535 f \n`
+  offsets.forEach((off) => { pdf += String(off).padStart(10, '0') + ' 00000 n \n' })
+  pdf += `trailer\n<</Size ${objs.length + 1}/Root 1 0 R>>\nstartxref\n${xref}\n%%EOF`
+  const bytes = new Uint8Array(pdf.length)
+  for (let i = 0; i < pdf.length; i++) bytes[i] = pdf.charCodeAt(i) & 0xff
+  return bytes
+}
+
 // backend status → big status pill + how many timeline steps are complete
 const STATUS_META = {
   PENDING: { label: 'Pending Payment', bg: '#FEF9EC', color: '#92400E', border: '#F3E2B8', doneCount: 1 },
-  PROCESSING: { label: 'Processing', bg: '#EEF3FF', color: '#1B4FD8', border: '#BFDBFE', doneCount: 3 },
+  PROCESSING: { label: 'Processing', bg: '#EEF3FF', color: '#1B4FD8', border: '#BFDBFE', doneCount: 2 },
   PAID: { label: 'Paid · Disbursed', bg: '#F0FDF4', color: '#15803D', border: '#BBF7D0', doneCount: 4 },
   FAILED: { label: 'Failed', bg: '#FFF5F5', color: '#991B1B', border: '#FECACA', doneCount: 1 },
 }
@@ -28,6 +54,8 @@ export default function AdminCommissionDetail() {
   const [c, setC] = useState(null)
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
+  const [working, setWorking] = useState(false)
+  const [toast, setToast] = useState('')
 
   const load = useCallback(async () => {
     setLoading(true); setNotFound(false)
@@ -43,6 +71,57 @@ export default function AdminCommissionDetail() {
   }, [id])
 
   useEffect(() => { load() }, [load])
+
+  const doDisburse = async () => {
+    if (working) return
+    if (!window.confirm(`Confirm you have sent SAR ${Number(c.net).toLocaleString()} to ${c.realtorName}'s bank account (${c.realtorIban || 'IBAN on file'})?`)) return
+    setWorking(true)
+    try {
+      const updated = await adminApi.disburseCommission(c.id)
+      setC(updated)
+      setToast('Commission disbursed — realtor notified')
+      setTimeout(() => setToast(''), 3000)
+    } catch (e) {
+      setToast(e.message || 'Could not disburse')
+      setTimeout(() => setToast(''), 3500)
+    } finally { setWorking(false) }
+  }
+
+  const downloadInvoice = () => {
+    if (!c) return
+    const sale = c.salePrice ? `SAR ${Number(c.salePrice).toLocaleString()}` : '-'
+    const lines = [
+      `Invoice #: ${c.dealRef || '-'}`,
+      `Issued: ${longDate(c.createdAt)}`,
+      `Deal closed: ${longDate(c.closedAt)}`,
+      '',
+      'FROM: Waseet (support@waseet.io)',
+      `TO: ${c.developerName || '-'}`,
+      '',
+      `Project: ${c.projectName || '-'}${c.unit ? ' - ' + c.unit : ''}`,
+      `Realtor: ${c.realtorName || '-'}`,
+      `Client: ${c.clientName || '-'}`,
+      `Status: ${meta.label}`,
+      '',
+      `Sale Price: ${sale}`,
+      `Gross Commission: ${money(c.gross)}`,
+      `Platform Fee (${pct}): - ${money(c.platformFee)}`,
+      `Total Due to Waseet: ${money(c.gross)}`,
+      `Realtor Receives (net): ${money(c.net)}`,
+      '',
+      `Realtor Bank: ${c.realtorBank || '-'}`,
+      `IBAN: ${c.realtorIban || '-'}`,
+      '',
+      'Waseet - private B2B real estate marketplace',
+    ]
+    const blob = new Blob([makePDF('Waseet - Commission Invoice', lines)], { type: 'application/pdf' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url; a.download = `invoice_${c.dealRef || 'commission'}.pdf`
+    document.body.appendChild(a); a.click(); a.remove()
+    setTimeout(() => URL.revokeObjectURL(url), 1000)
+    setToast('Invoice downloaded'); setTimeout(() => setToast(''), 2500)
+  }
 
   const fromToBox = (label, name, sub) => (
     <div style={{ flex: 1, background: colors.bg, border: `1px solid ${colors.surfaceMuted}`, borderRadius: 8, padding: '12px 14px' }}>
@@ -90,9 +169,13 @@ export default function AdminCommissionDetail() {
   const dealDetails = [
     ['Project', c.projectName || '—'], ['Unit', c.unit || '—'],
     ['Realtor', c.realtorName || '—'], ['Developer', c.developerName || '—'],
+    ['Client', c.clientName || '—'], ['Client phone', c.clientPhone || '—'],
+    ['Sale price', money(c.salePrice)], ['Lead submitted', longDate(c.leadSubmittedAt)],
     ['Deal Closed', longDate(c.closedAt)], ['Status', meta.label],
   ]
   const breakdown = [
+    ['Sale Price', money(c.salePrice), false, false],
+    ['Developer Commission Rate', '3%', false, true],
     ['Gross Commission', money(c.gross), true, false],
     [`Platform Fee (${pct} of ${money(c.gross)})`, `− ${money(c.platformFee)}`, false, true],
   ]
@@ -135,7 +218,7 @@ export default function AdminCommissionDetail() {
         }
         actions={
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <button className="wa-hide-sm" style={btnGhost}>Download Invoice PDF</button>
+            <button onClick={downloadInvoice} className="wa-hide-sm" style={btnGhost}>Download Invoice PDF</button>
             <button onClick={() => navigate('/admin/commissions')} style={btnGhost}>← Back</button>
           </div>
         }
@@ -245,6 +328,15 @@ export default function AdminCommissionDetail() {
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ fontSize: 11, color: colors.textFaint }}>Platform earned</span><span style={{ fontSize: 13, color: colors.textMuted }}>{money(c.platformFee)}</span></div>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ fontSize: 11, color: colors.textFaint }}>To disburse</span><span style={{ fontSize: 13, fontWeight: 600 }}>{money(c.net)}</span></div>
               </div>
+              {c.status === 'PROCESSING' && (
+                <button onClick={doDisburse} disabled={working} style={{ width: '100%', height: 38, marginTop: 12, background: colors.green, border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 600, color: '#fff', fontFamily: 'inherit', cursor: working ? 'default' : 'pointer', opacity: working ? 0.7 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7 }}>
+                  <svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={2}><path d="M20 6L9 17l-5-5" /></svg>
+                  {working ? 'Disbursing…' : `Mark disbursed · ${money(c.net)}`}
+                </button>
+              )}
+              {c.status === 'PAID' && (
+                <div style={{ marginTop: 12, textAlign: 'center', fontSize: 12, color: colors.greenDark, background: colors.greenTint, border: `1px solid ${colors.greenTintBorder}`, borderRadius: 8, padding: '8px' }}>Disbursed to realtor ✓</div>
+              )}
             </div>
 
             {/* Realtor bank */}
@@ -267,6 +359,9 @@ export default function AdminCommissionDetail() {
           </div>
         </div>
       </div>
+      {toast && (
+        <div style={{ position: 'fixed', right: 22, bottom: 22, zIndex: 70, background: colors.ink, color: '#fff', borderRadius: 10, padding: '12px 16px', fontSize: 13, fontWeight: 500, boxShadow: '0 8px 24px rgba(0,0,0,0.2)' }}>{toast}</div>
+      )}
     </>
   )
 }

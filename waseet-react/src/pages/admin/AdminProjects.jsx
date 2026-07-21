@@ -3,8 +3,10 @@ import { useNavigate } from 'react-router-dom'
 import { colors } from '../../theme/tokens'
 import { Topbar } from '../../components/layout/Topbar'
 import { Pagination } from './AdminTableKit'
+import { FilterMenu } from '../../components/admin/FilterMenu'
 import { adminApi } from '../../lib/api'
 import { countryName, initials, joinedLabel, timeAgo } from '../../lib/adminFormat'
+import { cityImage } from '../../lib/cityImages'
 
 const hatch = 'repeating-linear-gradient(45deg, #E9EBEE 0, #E9EBEE 1px, transparent 1px, transparent 8px)'
 
@@ -29,6 +31,8 @@ const toRow = (p) => ({
   added: joinedLabel(p.createdAt),
   addedAgo: timeAgo(p.createdAt),
   status: p.status,
+  featured: !!p.featured,
+  image: p.image || null,
 })
 
 const sBadge = (bg, color, border) => ({ display: 'inline-flex', alignItems: 'center', gap: 4, borderRadius: 999, padding: '2px 8px', fontSize: 11, fontWeight: 600, background: bg, color, border: `1px solid ${border}` })
@@ -94,6 +98,11 @@ export default function AdminProjects() {
   const [featured, setFeatured] = useState({})
   const [developers, setDevelopers] = useState([])
   const [developerId, setDeveloperId] = useState('')
+  const [search, setSearch] = useState('')
+  const [cityF, setCityF] = useState('')
+  const [typeF, setTypeF] = useState('')
+  const [toast, setToast] = useState('')
+  const [menuOpen, setMenuOpen] = useState(null)
 
   const load = useCallback(async () => {
     setLoading(true); setLoadError('')
@@ -101,7 +110,9 @@ export default function AdminProjects() {
       const params = {}
       if (developerId) params.developerId = developerId
       const res = await adminApi.listProjects(params)
-      setData((res.projects || []).map(toRow))
+      const rows = (res.projects || []).map(toRow)
+      setData(rows)
+      setFeatured(Object.fromEntries(rows.filter((r) => r.featured).map((r) => [r.id, true])))
       if (res.counts) setCounts(res.counts)
       // keep the full developer list from the initial (unfiltered) load so the
       // dropdown stays populated even after a developer filter is applied.
@@ -114,17 +125,40 @@ export default function AdminProjects() {
   }, [developerId])
   useEffect(() => { load() }, [load])
 
-  const toggleFeature = (id) =>
-    setFeatured((f) => {
-      const n = { ...f }
-      if (n[id]) delete n[id]
-      else n[id] = true
-      return n
-    })
+  const toggleFeature = async (id) => {
+    const next = !featured[id]
+    // optimistic update
+    setFeatured((f) => { const n = { ...f }; if (next) n[id] = true; else delete n[id]; return n })
+    try {
+      await adminApi.setProjectFeatured(id, next)
+      setData((d) => d.map((r) => (r.id === id ? { ...r, featured: next } : r)))
+    } catch (e) {
+      // revert on failure (e.g. the max-6 limit)
+      setFeatured((f) => { const n = { ...f }; if (next) delete n[id]; else n[id] = true; return n })
+      setToast(e.message || 'Could not update featured')
+      setTimeout(() => setToast(''), 3500)
+    }
+  }
+
+  const quickStatus = async (id, status) => {
+    try {
+      await adminApi.setProjectStatus(id, status)
+      setToast(`Project marked ${status === 'LIVE' ? 'Live' : 'Sold Out'}`)
+      setTimeout(() => setToast(''), 2500)
+      load()
+    } catch (e) { setToast(e.message || 'Could not update status'); setTimeout(() => setToast(''), 3500) }
+  }
+
+  const cityOpts = [{ value: '', label: 'All cities' }, ...Array.from(new Set(data.map((r) => r.city).filter((c) => c && c !== '—'))).sort().map((c) => ({ value: c, label: c }))]
+  const typeOpts = [{ value: '', label: 'All types' }, ...Array.from(new Set(data.map((r) => r.type).filter((t) => t && t !== '—'))).sort().map((t) => ({ value: t, label: t }))]
 
   const activeTab = tabDefs.find((t) => t.id === tab) || tabDefs[0]
+  const q = search.trim().toLowerCase()
   let visible = activeTab.status ? data.filter((r) => r.status === activeTab.status) : data
   if (featuredFilter) visible = visible.filter((r) => featured[r.id])
+  if (q) visible = visible.filter((r) => (r.name || '').toLowerCase().includes(q) || (r.developer || '').toLowerCase().includes(q))
+  if (cityF) visible = visible.filter((r) => r.city === cityF)
+  if (typeF) visible = visible.filter((r) => r.type === typeF)
 
   const featuredList = data.filter((r) => featured[r.id]).map((r, i) => ({ id: r.id, rank: String(i + 1).padStart(2, '0'), name: r.name + ' — ' + r.city }))
 
@@ -149,7 +183,7 @@ export default function AdminProjects() {
       />
 
       {/* Tabs */}
-      <div style={{ background: '#fff', borderBottom: `1px solid ${colors.border}`, padding: '0 22px', display: 'flex' }}>
+      <div className="pd-tabs" style={{ background: '#fff', borderBottom: `1px solid ${colors.border}`, padding: '0 22px', display: 'flex', overflowX: 'auto' }}>
         {tabDefs.map((t) => {
           const on = tab === t.id
           const amber = t.id === 'Pending Review'
@@ -158,7 +192,7 @@ export default function AdminProjects() {
           else if (amber) badgeStyle = { background: '#FEF9EC', border: '1px solid #F3E2B8', color: colors.amberText }
           else badgeStyle = { background: colors.surfaceMuted, color: colors.textSoft }
           return (
-            <div key={t.id} onClick={() => setTab(t.id)} style={{ padding: '11px 16px', fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', whiteSpace: 'nowrap', borderBottom: `2px solid ${on ? colors.ink : 'transparent'}`, color: on ? colors.ink : colors.textSoft, fontWeight: on ? 600 : 400 }}>
+            <div key={t.id} onClick={() => setTab(t.id)} style={{ padding: '11px 16px', fontSize: 13, cursor: 'pointer', flexShrink: 0, display: 'flex', alignItems: 'center', whiteSpace: 'nowrap', borderBottom: `2px solid ${on ? colors.ink : 'transparent'}`, color: on ? colors.ink : colors.textSoft, fontWeight: on ? 600 : 400 }}>
               {t.id}
               <span style={{ borderRadius: 999, padding: '1px 6px', fontSize: 10, fontWeight: 600, marginLeft: 5, ...badgeStyle }}>{counts[t.countKey] ?? 0}</span>
             </div>
@@ -167,15 +201,14 @@ export default function AdminProjects() {
       </div>
 
       {/* Filter bar */}
-      <div style={{ background: '#fff', borderBottom: `1px solid ${colors.border}`, padding: '10px 22px', display: 'flex', gap: 8, alignItems: 'center' }}>
-        <div style={{ flex: 1, maxWidth: 280, position: 'relative' }}>
+      <div style={{ background: '#fff', borderBottom: `1px solid ${colors.border}`, padding: '10px 22px', display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+        <div style={{ flex: '1 1 220px', maxWidth: 280, minWidth: 160, position: 'relative' }}>
           <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={colors.textFaint} strokeWidth={1.8} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)' }}><circle cx="11" cy="11" r="8" /><path d="M21 21l-4.3-4.3" /></svg>
-          <input placeholder="Search by project name or developer..." style={{ width: '100%', height: 34, border: `1px solid ${colors.border}`, borderRadius: 7, padding: '0 10px 0 32px', fontSize: 12, fontFamily: 'inherit' }} />
+          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search by project name or developer..." style={{ width: '100%', height: 34, border: `1px solid ${colors.border}`, borderRadius: 7, padding: '0 10px 0 32px', fontSize: 12, fontFamily: 'inherit' }} />
         </div>
         <DeveloperFilter developers={developers} value={developerId} onChange={setDeveloperId} />
-        {['City', 'Type'].map((f) => (
-          <span key={f} style={{ height: 34, padding: '0 12px', border: `1px solid ${colors.border}`, borderRadius: 7, fontSize: 12, color: colors.textMuted, display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', background: '#fff' }}>{f} {chevron}</span>
-        ))}
+        <FilterMenu label="City" value={cityF} options={cityOpts} onChange={setCityF} />
+        <FilterMenu label="Type" value={typeF} options={typeOpts} onChange={setTypeF} />
         <span onClick={() => setFeaturedFilter((v) => !v)} style={{ height: 34, padding: '0 12px', borderRadius: 999, fontSize: 12, display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer', marginLeft: 'auto', ...(featuredFilter ? { background: '#FEF9EC', border: `1px solid ${colors.amber}`, color: colors.amberText } : { background: colors.amberTint, border: `1px solid ${colors.amberTintBorder}`, color: colors.amberText }) }}>
           <svg width={13} height={13} viewBox="0 0 24 24" fill={colors.amber} stroke={colors.amber} strokeWidth={1.5}><path d="M12 2l3 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.9 21l1.2-6.8-5-4.9 6.9-1z" /></svg>Featured only
         </span>
@@ -214,7 +247,11 @@ export default function AdminProjects() {
             return (
               <div key={r.id} onClick={() => goRow(r)} style={{ display: 'flex', alignItems: 'center', gap: 12, borderBottom: `1px solid ${colors.surfaceMuted}`, padding: '12px 16px', minHeight: 60, cursor: 'pointer', background: pending ? '#FFFEF5' : '#fff', borderLeft: pending ? `2px solid ${colors.amber}` : '2px solid transparent' }}>
                 <div style={{ flex: 2.5, display: 'flex', gap: 10, alignItems: 'center' }}>
-                  <div style={{ width: 44, height: 32, borderRadius: 6, background: colors.surfaceMuted, backgroundImage: hatch, flexShrink: 0 }} />
+                  {(r.image || cityImage(r.city)) ? (
+                    <img src={r.image || cityImage(r.city)} alt="" style={{ width: 44, height: 32, borderRadius: 6, objectFit: 'cover', border: `1px solid ${colors.border}`, flexShrink: 0 }} />
+                  ) : (
+                    <div style={{ width: 44, height: 32, borderRadius: 6, background: colors.surfaceMuted, backgroundImage: hatch, flexShrink: 0 }} />
+                  )}
                   <div>
                     <div style={{ fontSize: 13, fontWeight: 500 }}>{r.name}</div>
                     <div style={{ fontSize: 10, color: colors.textFaint }}>{r.units}</div>
@@ -251,9 +288,28 @@ export default function AdminProjects() {
                 </div>
                 <div style={{ flex: 1, display: 'flex', gap: 6, justifyContent: 'flex-end', alignItems: 'center' }}>
                   <span onClick={(e) => { e.stopPropagation(); navigate('/admin/projects/' + r.id) }} style={{ height: 26, padding: '0 8px', background: pending ? colors.green : '#fff', border: pending ? 'none' : `1px solid ${colors.border}`, borderRadius: 5, fontSize: 11, fontWeight: 600, color: pending ? '#fff' : colors.textMuted, display: 'flex', alignItems: 'center', cursor: 'pointer' }}>{pending ? 'Review →' : 'View →'}</span>
-                  <span onClick={(e) => e.stopPropagation()} style={{ width: 28, height: 28, borderRadius: '50%', border: `1px solid ${colors.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', background: '#fff' }}>
-                    <svg width={14} height={14} viewBox="0 0 24 24" fill={colors.textFaint}><circle cx="5" cy="12" r="1.6" /><circle cx="12" cy="12" r="1.6" /><circle cx="19" cy="12" r="1.6" /></svg>
-                  </span>
+                  <div style={{ position: 'relative' }}>
+                    <span onClick={(e) => { e.stopPropagation(); setMenuOpen(menuOpen === r.id ? null : r.id) }} style={{ width: 28, height: 28, borderRadius: '50%', border: `1px solid ${colors.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', background: menuOpen === r.id ? colors.surfaceMuted : '#fff' }}>
+                      <svg width={14} height={14} viewBox="0 0 24 24" fill={colors.textFaint}><circle cx="5" cy="12" r="1.6" /><circle cx="12" cy="12" r="1.6" /><circle cx="19" cy="12" r="1.6" /></svg>
+                    </span>
+                    {menuOpen === r.id && (
+                      <>
+                        <div onClick={(e) => { e.stopPropagation(); setMenuOpen(null) }} style={{ position: 'fixed', inset: 0, zIndex: 40 }} />
+                        <div onClick={(e) => e.stopPropagation()} style={{ position: 'absolute', top: 32, right: 0, minWidth: 170, background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 8, boxShadow: '0 8px 24px rgba(0,0,0,0.12)', zIndex: 41, padding: 4, textAlign: 'left' }}>
+                          {[
+                            { label: 'View details', fn: () => navigate('/admin/projects/' + r.id) },
+                            { label: 'Edit project', fn: () => navigate('/admin/projects/' + r.id + '/edit') },
+                            { label: feat ? 'Remove from featured' : 'Feature in marketplace', fn: () => toggleFeature(r.id) },
+                            r.status === 'SOLD_OUT'
+                              ? { label: 'Mark as Live', fn: () => quickStatus(r.id, 'LIVE') }
+                              : { label: 'Mark as Sold Out', fn: () => quickStatus(r.id, 'SOLD_OUT') },
+                          ].map((a) => (
+                            <div key={a.label} onClick={() => { setMenuOpen(null); a.fn() }} style={{ padding: '8px 10px', borderRadius: 6, fontSize: 12.5, color: colors.textMuted, cursor: 'pointer', whiteSpace: 'nowrap' }} onMouseEnter={(e) => (e.currentTarget.style.background = colors.surfaceMuted)} onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}>{a.label}</div>
+                          ))}
+                        </div>
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
             )
@@ -294,6 +350,9 @@ export default function AdminProjects() {
 
         <Pagination label={`Showing ${visible.length} of ${counts.all} projects`} />
       </div>
+      {toast && (
+        <div style={{ position: 'fixed', right: 22, bottom: 22, zIndex: 70, background: colors.ink, color: '#fff', borderRadius: 10, padding: '12px 16px', fontSize: 13, fontWeight: 500, boxShadow: '0 8px 24px rgba(0,0,0,0.2)' }}>{toast}</div>
+      )}
     </>
   )
 }

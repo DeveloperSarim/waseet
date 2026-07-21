@@ -14,8 +14,13 @@ const rLabel = { fontSize: 10, fontWeight: 600, color: colors.textFaint, textTra
 
 // pipeline steps aligned to the Lead status enum
 const stepDefs = ['New', 'Contacted', 'Viewing', 'Negotiating', 'Closed', 'Lost']
+const STEP_ENUM = ['NEW', 'CONTACTED', 'VIEWING', 'NEGOTIATING', 'CLOSED', 'LOST']
 const STEP_INDEX = { NEW: 0, CONTACTED: 1, VIEWING: 2, NEGOTIATING: 3, CLOSED: 4, LOST: 5 }
 const STATUS_LABEL = { NEW: 'New', CONTACTED: 'Contacted', VIEWING: 'Viewing', NEGOTIATING: 'Negotiating', CLOSED: 'Closed', LOST: 'Lost' }
+
+const sar = (n) => 'SAR ' + Number(n || 0).toLocaleString('en-US')
+const budgetOf = (b) => { if (b == null || b === '') return 0; if (typeof b === 'number') return b; return Number(String(b).replace(/[^\d]/g, '')) || 0 }
+const fmtWhen = (x) => (x ? new Date(x).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—')
 
 const modalShell = { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }
 const btnGhost = { height: 34, padding: '0 14px', background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 7, fontSize: 12, color: colors.textMuted, fontFamily: 'inherit', cursor: 'pointer' }
@@ -27,6 +32,21 @@ export default function LeadDetail() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [disputeOpen, setDisputeOpen] = useState(false)
+  const [disputeReason, setDisputeReason] = useState('')
+  const [disputeErr, setDisputeErr] = useState('')
+  const [submittingDispute, setSubmittingDispute] = useState(false)
+  const [toast, setToast] = useState('')
+
+  const submitDispute = async () => {
+    if (submittingDispute || !lead) return
+    if (!disputeReason.trim()) { setDisputeErr('Please describe the issue.'); return }
+    setSubmittingDispute(true); setDisputeErr('')
+    try {
+      await realtorApi.createDispute({ leadId: lead.id, subject: disputeReason.trim().split('\n')[0].slice(0, 80), description: disputeReason.trim() })
+      setDisputeOpen(false); setDisputeReason('')
+      setToast('Dispute submitted — our team reviews within 48 hours'); setTimeout(() => setToast(''), 4000)
+    } catch (e) { setDisputeErr(e.message || 'Could not submit dispute') } finally { setSubmittingDispute(false) }
+  }
 
   const load = useCallback(async () => {
     setLoading(true); setError('')
@@ -43,9 +63,28 @@ export default function LeadDetail() {
   const isLost = status === 'LOST'
   const view = isClosed ? 'closed' : isLost ? 'lost' : 'neg'
   const currentIdx = STEP_INDEX[status] ?? 0
-  // Only two dates are known: submission (createdAt → step New) and the latest
-  // status change (updatedAt → current step). All other steps are unknown.
-  const dates = stepDefs.map((_, i) => (i === 0 ? joinedLabel(lead?.createdAt) : i === currentIdx ? joinedLabel(lead?.updatedAt) : '—'))
+  // Per-status timestamps come from the recorded statusHistory; fall back to
+  // createdAt (New) / updatedAt (current) for leads created before it existed.
+  const histMap = {}
+  if (Array.isArray(lead?.statusHistory)) lead.statusHistory.forEach((h) => { if (h?.status && h?.at) histMap[h.status] = h.at })
+  const dates = stepDefs.map((_, i) => {
+    const en = STEP_ENUM[i]
+    if (histMap[en]) return fmtWhen(histMap[en])
+    if (i === 0) return fmtWhen(lead?.createdAt)
+    if (i === currentIdx) return fmtWhen(lead?.updatedAt)
+    return '—'
+  })
+
+  // Commission math: actuals from the commission once closed, otherwise an
+  // estimate from the client's budget (3% commission, 15% platform fee).
+  const budgetNum = budgetOf(lead?.budget)
+  const comm = lead?.commission
+  const estComm = Math.round(budgetNum * 0.03)
+  const estFee = Math.round(estComm * 0.15)
+  const preview = (isClosed && comm)
+    ? { sale: Math.round((comm.gross || 0) / 0.03), commission: comm.gross || 0, fee: (comm.gross || 0) - (comm.net || 0), receive: comm.net || 0 }
+    : { sale: budgetNum, commission: estComm, fee: estFee, receive: estComm - estFee }
+  const money = (n) => (n > 0 ? sar(n) : '—')
 
   const timeline = stepDefs.map((label, i) => {
     const isDone = i < currentIdx
@@ -65,12 +104,11 @@ export default function LeadDetail() {
   })
 
   const clientFields = lead ? [
-    ['Email', '—'],
-    ['Budget', '—'],
+    ['Email', lead.clientEmail || '—'],
+    ['Budget', budgetNum ? sar(budgetNum) : '—'],
     ['Unit Type', lead.unit || '—'],
-    ['Preferred Area', '—'],
-    ['Submitted', joinedLabel(lead.createdAt)],
-    ['Last updated', joinedLabel(lead.updatedAt)],
+    ['Submitted', fmtWhen(lead.createdAt)],
+    ['Last updated', fmtWhen(lead.updatedAt)],
   ] : []
 
   const waHref = lead?.clientPhone ? `https://wa.me/${lead.clientPhone.replace(/[^\d]/g, '')}` : null
@@ -153,7 +191,11 @@ export default function LeadDetail() {
             <div style={card}>
               <div style={sectionLabel}>Project</div>
               <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
-                <div style={{ width: 64, height: 48, minWidth: 64, borderRadius: 8, background: colors.surfaceMuted, backgroundImage: hatch }} />
+                {lead.projectImage ? (
+                  <img src={lead.projectImage} alt="" style={{ width: 64, height: 48, minWidth: 64, borderRadius: 8, objectFit: 'cover', border: `1px solid ${colors.border}` }} />
+                ) : (
+                  <div style={{ width: 64, height: 48, minWidth: 64, borderRadius: 8, background: colors.surfaceMuted, backgroundImage: hatch }} />
+                )}
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 3 }}>{lead.projectName || '—'}</div>
                   <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
@@ -202,8 +244,8 @@ export default function LeadDetail() {
                 <div style={{ background: colors.greenTint, border: `1px solid ${colors.greenTintBorder}`, borderRadius: 10, padding: '14px 16px', marginBottom: 14, textAlign: 'center' }}>
                   <svg width={24} height={24} viewBox="0 0 24 24" fill="none" stroke={colors.green} strokeWidth={2} style={{ marginBottom: 8 }}><circle cx="12" cy="12" r="10" /><path d="M8 12l2.5 2.5L16 9" /></svg>
                   <div style={{ fontSize: 16, fontWeight: 700 }}>Deal Closed! 🎉</div>
-                  <div style={{ fontSize: 14, color: colors.greenDark, marginTop: 2 }}>Commission: —</div>
-                  <div style={{ fontSize: 12, color: colors.textFaint, marginTop: 4 }}>Updated {joinedLabel(lead.updatedAt)}</div>
+                  <div style={{ fontSize: 14, color: colors.greenDark, marginTop: 2 }}>Commission: {comm ? sar(comm.net) : '—'}</div>
+                  <div style={{ fontSize: 12, color: colors.textFaint, marginTop: 4 }}>Updated {fmtWhen(lead.updatedAt)}</div>
                 </div>
               ) : (
                 <div style={{ textAlign: 'center', marginBottom: 14 }}>
@@ -236,13 +278,13 @@ export default function LeadDetail() {
             {view !== 'lost' && (
               <div style={card}>
                 <div style={rLabel}>{view === 'closed' ? 'Commission earned' : 'If deal closes'}</div>
-                <div style={{ fontSize: 11, color: colors.textFaint, marginBottom: 10 }}>Based on {lead.unit || '—'}:</div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: colors.textMuted }}><span>Sale Price</span><span>—</span></div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: colors.textMuted, marginTop: 4 }}><span>Commission</span><span>—</span></div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: colors.textFaint, marginTop: 4 }}><span>Platform fee</span><span>—</span></div>
+                <div style={{ fontSize: 11, color: colors.textFaint, marginBottom: 10 }}>{isClosed ? 'Final commission on this deal:' : budgetNum ? `Estimated on the client's SAR ${budgetNum.toLocaleString('en-US')} budget:` : 'Add a budget to estimate your commission.'}</div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: colors.textMuted }}><span>Sale Price</span><span>{money(preview.sale)}</span></div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: colors.textMuted, marginTop: 4 }}><span>Commission (3%)</span><span>{money(preview.commission)}</span></div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: colors.textFaint, marginTop: 4 }}><span>Platform fee (15%)</span><span>{money(preview.fee)}</span></div>
                 <div style={{ height: 1, background: colors.surfaceMuted, margin: '8px 0' }} />
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, fontWeight: 700 }}><span>You receive</span><span style={{ color: view === 'closed' ? colors.green : colors.ink }}>—</span></div>
-                <div style={{ fontSize: 11, color: colors.textFaint, marginTop: 10, lineHeight: 1.5 }}>{view === 'closed' ? 'Processing — paid to your bank after Waseet verifies the deal.' : 'Paid to your bank account after deal is verified by Waseet.'}</div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, fontWeight: 700 }}><span>You receive</span><span style={{ color: view === 'closed' ? colors.green : colors.ink }}>{money(preview.receive)}</span></div>
+                <div style={{ fontSize: 11, color: colors.textFaint, marginTop: 10, lineHeight: 1.5 }}>{view === 'closed' ? 'Processing — paid to your bank after Waseet verifies the deal.' : 'Estimate only — the final amount depends on the price the deal closes at.'}</div>
               </div>
             )}
 
@@ -272,7 +314,8 @@ export default function LeadDetail() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}><span style={{ fontSize: 14, fontWeight: 600 }}>Raise a dispute</span><span onClick={() => setDisputeOpen(false)} style={{ fontSize: 18, color: colors.textFaint, cursor: 'pointer' }}>×</span></div>
             <div style={{ background: colors.bg, border: `1px solid ${colors.surfaceMuted}`, borderRadius: 8, padding: '10px 12px', marginBottom: 14 }}><div style={{ fontSize: 13, color: colors.textMuted }}>{lead.clientName || '—'} · {lead.projectName || '—'}{lead.unit ? ` ${lead.unit}` : ''}</div><div style={{ fontSize: 11, color: colors.textFaint, marginTop: 3 }}>Lead #{lead.id}</div></div>
             <div style={{ fontSize: 12, fontWeight: 500, color: colors.textMuted, marginBottom: 4 }}>Reason for dispute *</div>
-            <textarea placeholder="Describe the issue clearly. e.g. I submitted this lead first but another realtor was credited..." style={{ width: '100%', height: 100, border: `1px solid ${colors.border}`, borderRadius: 7, padding: '8px 10px', fontSize: 13, fontFamily: 'inherit', resize: 'none' }} />
+            <textarea value={disputeReason} onChange={(e) => setDisputeReason(e.target.value)} placeholder="Describe the issue clearly. e.g. I submitted this lead first but another realtor was credited..." style={{ width: '100%', height: 100, border: `1px solid ${colors.border}`, borderRadius: 7, padding: '8px 10px', fontSize: 13, fontFamily: 'inherit', resize: 'none' }} />
+            {disputeErr && <div style={{ fontSize: 12, color: colors.red, marginTop: 6 }}>{disputeErr}</div>}
             <div style={{ fontSize: 12, fontWeight: 500, color: colors.textMuted, margin: '10px 0 4px' }}>Evidence (optional)</div>
             <div style={{ border: `2px dashed ${colors.borderStrong}`, borderRadius: 8, padding: 16, textAlign: 'center' }}>
               <div style={{ fontSize: 12, color: colors.textFaint }}>Attach screenshots or documents</div>
@@ -280,11 +323,14 @@ export default function LeadDetail() {
             </div>
             <div style={{ fontSize: 11, color: colors.textFaint, marginTop: 10 }}>Our team reviews disputes within 48 hours and notifies both parties.</div>
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 14 }}>
-              <button onClick={() => setDisputeOpen(false)} style={btnGhost}>Cancel</button>
-              <button onClick={() => setDisputeOpen(false)} style={{ height: 34, padding: '0 14px', background: colors.green, border: 'none', borderRadius: 7, fontSize: 12, fontWeight: 600, color: '#fff', fontFamily: 'inherit', cursor: 'pointer' }}>Submit Dispute</button>
+              <button onClick={() => setDisputeOpen(false)} disabled={submittingDispute} style={btnGhost}>Cancel</button>
+              <button onClick={submitDispute} disabled={submittingDispute} style={{ height: 34, padding: '0 14px', background: colors.green, border: 'none', borderRadius: 7, fontSize: 12, fontWeight: 600, color: '#fff', fontFamily: 'inherit', cursor: submittingDispute ? 'default' : 'pointer', opacity: submittingDispute ? 0.7 : 1 }}>{submittingDispute ? 'Submitting…' : 'Submit Dispute'}</button>
             </div>
           </div>
         </div>
+      )}
+      {toast && (
+        <div style={{ position: 'fixed', bottom: 22, right: 22, zIndex: 80, background: colors.ink, color: '#fff', borderRadius: 10, padding: '12px 16px', fontSize: 13, fontWeight: 500, boxShadow: '0 8px 24px rgba(0,0,0,0.2)' }}>{toast}</div>
       )}
     </>
   )

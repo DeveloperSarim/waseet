@@ -40,6 +40,19 @@ export const SETTINGS_DEFAULTS = {
       { label: 'Final testing and verification', status: 'pending' },
     ],
   },
+  // Independent maintenance scope for the marketplace only — takes the property
+  // browsing experience offline while the rest of each portal keeps working.
+  marketplaceMaintenance: {
+    enabled: false,
+    message: "The marketplace is temporarily offline for scheduled updates. Your dashboard, leads and commissions remain available.",
+    etaMinutes: 30,
+    startedAt: null,
+    items: [
+      { label: 'Refreshing property listings', status: 'active' },
+      { label: 'Improving marketplace search', status: 'pending' },
+      { label: 'Final testing and verification', status: 'pending' },
+    ],
+  },
 }
 
 export const DB_REGIONS = [
@@ -74,4 +87,11 @@ export async function setSection(key, patch) {
 export async function isMaintenance() {
   const m = await getSection('maintenance')
   return !!m.enabled
+}
+
+// convenience: is the marketplace specifically in maintenance mode? (Full-platform
+// maintenance also implies the marketplace is down.)
+export async function isMarketplaceMaintenance() {
+  const [platform, mp] = await Promise.all([getSection('maintenance'), getSection('marketplaceMaintenance')])
+  return !!platform.enabled || !!mp.enabled
 }

@@ -38,7 +38,7 @@ const maskPhone = (p) => {
 }
 
 const selStyle = { height: 34, border: `1px solid ${colors.border}`, borderRadius: 7, padding: '0 10px', fontSize: 12, fontFamily: 'inherit', color: colors.textMuted, background: '#fff' }
-const dateStyle = { height: 34, width: 110, border: `1px solid ${colors.border}`, borderRadius: 7, padding: '0 10px', fontSize: 12, fontFamily: 'inherit', color: colors.textMuted }
+const dateStyle = { height: 34, width: 145, border: `1px solid ${colors.border}`, borderRadius: 7, padding: '0 10px', fontSize: 12, fontFamily: 'inherit', color: colors.textMuted }
 
 export default function DeveloperLeads() {
   const navigate = useNavigate()
@@ -47,6 +47,11 @@ export default function DeveloperLeads() {
   const [leads, setLeads] = useState([])
   const [loading, setLoading] = useState(true)
   const [tab, setTab] = useState('All')
+  const [search, setSearch] = useState('')
+  const [projectF, setProjectF] = useState('')
+  const [statusF, setStatusF] = useState('')
+  const [dateFrom, setDateFrom] = useState('')
+  const [dateTo, setDateTo] = useState('')
 
   const load = useCallback(() => {
     setLoading(true)
@@ -62,7 +67,23 @@ export default function DeveloperLeads() {
     acc[cat] = leads.filter((l) => inCategory(cat, l.status)).length
     return acc
   }, {})
-  const visible = leads.filter((l) => inCategory(tab, l.status))
+
+  const projectOpts = Array.from(new Set(leads.map((l) => l.projectName).filter(Boolean))).sort()
+  const q = search.trim().toLowerCase()
+  const fromT = dateFrom ? new Date(dateFrom).setHours(0, 0, 0, 0) : null
+  const toT = dateTo ? new Date(dateTo).setHours(23, 59, 59, 999) : null
+  const visible = leads.filter((l) => {
+    if (!inCategory(tab, l.status)) return false
+    if (projectF && l.projectName !== projectF) return false
+    if (statusF && l.status !== statusF) return false
+    if (q && !(`${l.clientName || ''} ${l.realtorName || ''}`.toLowerCase().includes(q))) return false
+    if (fromT || toT) {
+      const t = new Date(l.createdAt || 0).getTime()
+      if (fromT && t < fromT) return false
+      if (toT && t > toT) return false
+    }
+    return true
+  })
 
   const changeStatus = (id, label) => {
     const en = LABEL_TO_ENUM[label]
@@ -102,13 +123,19 @@ export default function DeveloperLeads() {
 
       {/* Filter bar */}
       <div style={{ background: '#fff', borderBottom: `1px solid ${colors.border}`, padding: '10px 22px', display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-        <select style={selStyle}><option>All Projects</option></select>
-        <select style={selStyle}><option>All Status</option></select>
-        <input placeholder="Date from" style={dateStyle} />
-        <input placeholder="Date to" style={dateStyle} />
+        <select value={projectF} onChange={(e) => setProjectF(e.target.value)} style={selStyle}>
+          <option value="">All Projects</option>
+          {projectOpts.map((p) => <option key={p} value={p}>{p}</option>)}
+        </select>
+        <select value={statusF} onChange={(e) => setStatusF(e.target.value)} style={selStyle}>
+          <option value="">All Status</option>
+          {Object.entries(ENUM_TO_LABEL).map(([en, lb]) => <option key={en} value={en}>{lb}</option>)}
+        </select>
+        <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} title="Date from" style={dateStyle} />
+        <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} title="Date to" style={dateStyle} />
         <div style={{ position: 'relative', flex: 1, maxWidth: 260, minWidth: 160 }}>
           <Icon name="search" size={14} color={colors.textFaint} strokeWidth={1.8} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)' }} />
-          <input placeholder="Search client or realtor..." style={{ width: '100%', height: 34, border: `1px solid ${colors.border}`, borderRadius: 7, padding: '0 10px 0 32px', fontSize: 12, fontFamily: 'inherit' }} />
+          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search client or realtor..." style={{ width: '100%', height: 34, border: `1px solid ${colors.border}`, borderRadius: 7, padding: '0 10px 0 32px', fontSize: 12, fontFamily: 'inherit' }} />
         </div>
       </div>
 

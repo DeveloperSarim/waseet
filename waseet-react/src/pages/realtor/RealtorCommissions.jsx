@@ -29,7 +29,7 @@ const makeTrack = (filled) =>
 // status enum → card presentation (labels + existing colors + timeline fill)
 const STATUS_META = {
   PENDING: { group: 'Pending', statusText: 'Pending Payment', filled: 1, netColor: colors.ink, msg: 'Waiting for developer payment', msgColor: colors.textFaint },
-  PROCESSING: { group: 'Processing', statusText: 'Processing', filled: 3, netColor: colors.ink, msg: 'Payment processing', msgColor: colors.textSoft },
+  PROCESSING: { group: 'Processing', statusText: 'Processing', filled: 2, netColor: colors.ink, msg: 'Payment processing — Waseet verifying', msgColor: colors.textSoft },
   PAID: { group: 'Paid', statusText: 'Paid ✓', filled: 4, netColor: colors.green, msg: 'Commission paid', msgColor: colors.green },
   FAILED: { group: 'Failed', statusText: 'Payment Failed', filled: 3, netColor: colors.red, msg: 'Payment failed', msgColor: colors.red },
 }
@@ -318,12 +318,14 @@ export default function RealtorCommissions() {
               <div style={{ fontSize: 11, color: colors.textSoft, marginTop: 2 }}>Only developer-paid commissions are withdrawable.</div>
             </div>
             <div style={{ fontSize: 12, fontWeight: 500, color: colors.textMuted, marginBottom: 6 }}>Payout method</div>
-            <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-              {[['bank', 'Bank transfer'], ['wallet', 'Wallet']].map(([v, l]) => (
-                <span key={v} onClick={() => setWithdrawMethod(v)} style={{ flex: 1, textAlign: 'center', padding: '9px 10px', borderRadius: 8, fontSize: 12, cursor: 'pointer', border: withdrawMethod === v ? `1.5px solid ${colors.green}` : `1px solid ${colors.border}`, background: withdrawMethod === v ? colors.greenTint : '#fff', color: withdrawMethod === v ? colors.greenDark : colors.textMuted, fontWeight: withdrawMethod === v ? 600 : 400 }}>{l}</span>
-              ))}
+            <div style={{ display: 'flex', gap: 10, alignItems: 'center', border: `1px solid ${colors.border}`, borderRadius: 8, padding: '10px 12px', marginBottom: 14 }}>
+              <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={colors.greenDark} strokeWidth={1.8}><path d="M3 21h18M3 10h18M5 6l7-3 7 3M4 10v11M20 10v11M8 14v3M12 14v3M16 14v3" /></svg>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 13, fontWeight: 600 }}>Bank transfer</div>
+                <div style={{ fontSize: 11, color: colors.textFaint }}>Sent to your saved bank account · settles in 3–5 business days</div>
+              </div>
             </div>
-            <div style={{ fontSize: 11, color: colors.textFaint, marginBottom: 14 }}>Funds are sent to your saved bank details. Processing takes 3–5 business days.</div>
+            <div style={{ fontSize: 11, color: colors.textFaint, marginBottom: 14 }}>Make sure your <span onClick={() => { setWithdrawOpen(false); navigate('/realtor/bank') }} style={{ color: colors.greenDark, cursor: 'pointer', fontWeight: 500 }}>bank details</span> are up to date before withdrawing.</div>
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
               <button onClick={() => setWithdrawOpen(false)} disabled={withdrawing} style={{ height: 36, padding: '0 14px', background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 8, fontSize: 13, color: colors.textMuted, fontFamily: 'inherit', cursor: 'pointer' }}>Cancel</button>
               <button onClick={submitWithdrawal} disabled={withdrawing || wallet.available <= 0} style={{ height: 36, padding: '0 16px', background: colors.green, border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 600, color: '#fff', fontFamily: 'inherit', cursor: withdrawing ? 'default' : 'pointer', opacity: withdrawing ? 0.6 : 1 }}>{withdrawing ? 'Requesting…' : `Withdraw ${money(wallet.available)}`}</button>

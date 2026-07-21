@@ -15,7 +15,7 @@ const label = { fontSize: 11, fontWeight: 600, color: colors.textFaint, textTran
 const addBtn = { border: `2px dashed ${colors.borderStrong}`, borderRadius: 8, padding: '8px 12px', textAlign: 'center', cursor: 'pointer', fontSize: 12, color: colors.textMuted, background: '#fff' }
 const removeBtn = { fontSize: 12, color: colors.red, cursor: 'pointer', padding: '2px 6px', whiteSpace: 'nowrap' }
 
-export function ProjectProgressEditor({ value, onChange }) {
+export function ProjectProgressEditor({ value, onChange, hideTimeline = false }) {
   const v = value || {}
   const timeline = Array.isArray(v.timeline) ? v.timeline : []
   const paymentPlan = Array.isArray(v.paymentPlan) ? v.paymentPlan : []
@@ -27,29 +27,37 @@ export function ProjectProgressEditor({ value, onChange }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-      {/* % complete */}
-      <div style={{ maxWidth: 220 }}>
-        <div style={label}>Overall progress (%)</div>
-        <input type="number" min={0} max={100} value={progressPercent} onChange={(e) => patch({ progressPercent: e.target.value === '' ? '' : Math.max(0, Math.min(100, Number(e.target.value))) })} placeholder="e.g. 68" style={field} />
-      </div>
-
-      {/* Timeline milestones */}
-      <div>
-        <div style={{ ...label, marginBottom: 10 }}>Construction timeline</div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {timeline.map((m, i) => (
-            <div key={i} style={{ display: 'grid', gridTemplateColumns: '1.3fr 1fr 1fr auto', gap: 8, alignItems: 'center' }}>
-              <input value={m.label || ''} onChange={(e) => setMilestone(i, 'label', e.target.value)} placeholder="Phase (e.g. Foundation)" style={field} />
-              <input value={m.date || ''} onChange={(e) => setMilestone(i, 'date', e.target.value)} placeholder="When (e.g. Q3 2025)" style={field} />
-              <select value={m.state || 'todo'} onChange={(e) => setMilestone(i, 'state', e.target.value)} style={field}>
-                {STATES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
-              </select>
-              <span onClick={() => patch({ timeline: timeline.filter((_, j) => j !== i) })} style={removeBtn}>× Remove</span>
-            </div>
-          ))}
+      {hideTimeline ? (
+        <div style={{ background: colors.greenTint, border: `1px solid ${colors.greenTintBorder}`, borderRadius: 8, padding: '12px 14px', fontSize: 12.5, color: colors.greenDark, lineHeight: 1.6 }}>
+          This project is marked <b>Ready</b> — construction is complete (100%), so no construction timeline is needed. Just set the payment plan below.
         </div>
-        <div onClick={() => patch({ timeline: [...timeline, { label: '', date: '', state: 'todo' }] })} style={{ ...addBtn, marginTop: 8 }}>+ Add milestone</div>
-      </div>
+      ) : (
+        <>
+          {/* % complete */}
+          <div style={{ maxWidth: 220 }}>
+            <div style={label}>Overall progress (%)</div>
+            <input type="number" min={0} max={100} value={progressPercent} onChange={(e) => patch({ progressPercent: e.target.value === '' ? '' : Math.max(0, Math.min(100, Number(e.target.value))) })} placeholder="e.g. 68" style={field} />
+          </div>
+
+          {/* Timeline milestones */}
+          <div>
+            <div style={{ ...label, marginBottom: 10 }}>Construction timeline</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {timeline.map((m, i) => (
+                <div key={i} style={{ display: 'grid', gridTemplateColumns: '1.3fr 1fr 1fr auto', gap: 8, alignItems: 'center' }}>
+                  <input value={m.label || ''} onChange={(e) => setMilestone(i, 'label', e.target.value)} placeholder="Phase (e.g. Foundation)" style={field} />
+                  <input value={m.date || ''} onChange={(e) => setMilestone(i, 'date', e.target.value)} placeholder="When (e.g. Q3 2025)" style={field} />
+                  <select value={m.state || 'todo'} onChange={(e) => setMilestone(i, 'state', e.target.value)} style={field}>
+                    {STATES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
+                  </select>
+                  <span onClick={() => patch({ timeline: timeline.filter((_, j) => j !== i) })} style={removeBtn}>× Remove</span>
+                </div>
+              ))}
+            </div>
+            <div onClick={() => patch({ timeline: [...timeline, { label: '', date: '', state: 'todo' }] })} style={{ ...addBtn, marginTop: 8 }}>+ Add milestone</div>
+          </div>
+        </>
+      )}
 
       {/* Payment plan */}
       <div>

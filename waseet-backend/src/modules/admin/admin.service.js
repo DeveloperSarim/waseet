@@ -7,7 +7,7 @@ import { hashPassword } from '../../utils/password.js'
 import { hashToken } from '../../utils/jwt.js'
 import { config } from '../../config/env.js'
 import { ApiError } from '../../middleware/error.js'
-import { sendApprovalEmail, sendRejectionEmail, sendMail } from '../../lib/mailer.js'
+import { sendApprovalEmail, sendRejectionEmail, sendMail, sendCommissionDisbursedEmail, sendAnnouncementEmail } from '../../lib/mailer.js'
 import { logger } from '../../utils/logger.js'
 import { getSection, setSection } from '../../lib/settings.js'
 import { resolveProjectMedia, uploadProjectMedia, uploadAvatar, imageUrl } from '../../lib/projectMedia.js'
@@ -128,6 +128,8 @@ export async function approveUser(id, adminId) {
 
   await prisma.$transaction([
     prisma.user.update({ where: { id }, data: { status: 'ACTIVE', mustChangePassword: true, passwordHash } }),
+    // approving the account also clears the KYC docs it was based on
+    prisma.document.updateMany({ where: { userId: id, status: 'PENDING' }, data: { status: 'VERIFIED' } }),
     prisma.passwordReset.deleteMany({ where: { userId: id, usedAt: null } }),
     prisma.passwordReset.create({
       data: { userId: id, tokenHash: hashToken(rawToken), expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) },
@@ -155,8 +157,38 @@ export async function rejectUser(id, adminId, reason) {
   return { id, status: 'REJECTED' }
 }
 
+// friendly document names for notifications
+const DOC_LABELS = { PROFILE_PHOTO: 'profile photo', FAL_LICENSE: 'FAL license', NATIONAL_ID: 'Iqama / National ID', TRADE_LICENSE: 'trade license', REGA_CERTIFICATE: 'REGA certificate', OTHER: 'document' }
+
+// Admin verifies / rejects a KYC document. Rejecting a document on an ACTIVE
+// realtor suspends their access until they re-verify — only an admin can
+// reactivate them afterwards.
+export async function setDocumentStatus(docId, adminId, status, reason) {
+  const valid = ['VERIFIED', 'REJECTED', 'PENDING']
+  if (!valid.includes(status)) throw new ApiError(400, 'Invalid document status', 'BAD_STATUS')
+  const doc = await prisma.document.findUnique({ where: { id: docId }, include: { user: true } })
+  if (!doc) throw new ApiError(404, 'Document not found', 'NOT_FOUND')
+
+  await prisma.document.update({ where: { id: docId }, data: { status } })
+
+  // rejecting a KYC doc revokes an active realtor's access until re-verified
+  if (status === 'REJECTED' && doc.user.role !== 'ADMIN' && doc.user.status === 'ACTIVE') {
+    await prisma.user.update({ where: { id: doc.userId }, data: { status: 'SUSPENDED' } })
+  }
+
+  const label = DOC_LABELS[doc.type] || 'document'
+  const body = status === 'REJECTED'
+    ? `Your ${label} was rejected${reason ? `: ${reason}` : ''}. Your account access is paused until it's re-verified by Waseet.`
+    : status === 'VERIFIED'
+      ? `Your ${label} has been verified. ✓`
+      : `Your ${label} is under review.`
+  await prisma.notification.create({ data: { userId: doc.userId, type: 'account', title: status === 'REJECTED' ? 'Document rejected' : status === 'VERIFIED' ? 'Document verified' : 'Document under review', body, link: '/realtor/profile', read: false } })
+  await prisma.auditLog.create({ data: { actorId: adminId, action: 'admin.document_status', entity: 'Document', entityId: docId, meta: { status, reason } } })
+  return getUserDetail(doc.userId)
+}
+
 // fields an admin may edit on any user
-const ADMIN_EDITABLE = ['fullName', 'phone', 'country', 'city', 'agency', 'specialization', 'languages', 'experience', 'licenseNumber', 'licenseType', 'companyName', 'contactName', 'website', 'bio', 'idType', 'idNumber', 'bankName', 'iban', 'avatarKey']
+const ADMIN_EDITABLE = ['fullName', 'phone', 'country', 'city', 'agency', 'specialization', 'languages', 'experience', 'licenseNumber', 'licenseType', 'licenseExpiry', 'companyName', 'contactName', 'website', 'bio', 'idType', 'idNumber', 'bankName', 'iban', 'avatarKey']
 
 async function loadTarget(id) {
   const user = await prisma.user.findUnique({ where: { id } })
@@ -296,10 +328,23 @@ export async function listProjects({ status, developerId } = {}) {
   // developer options for the filter dropdown
   const developers = await prisma.user.findMany({ where: { role: 'DEVELOPER' }, orderBy: { companyName: 'asc' }, select: { id: true, companyName: true, fullName: true } })
   return {
-    projects: rows.map((p) => ({ id: p.id, title: p.title, developerName: p.developerName, developerId: p.developerId, city: p.city, country: p.country, type: p.type, bedrooms: p.bedrooms, priceFrom: p.priceFrom, priceTo: p.priceTo, commissionPct: p.commissionPct, status: p.status, leadCount: p._count.leads, createdAt: p.createdAt })),
+    projects: await Promise.all(rows.map(async (p) => ({ id: p.id, title: p.title, developerName: p.developerName, developerId: p.developerId, city: p.city, country: p.country, type: p.type, bedrooms: p.bedrooms, priceFrom: p.priceFrom, priceTo: p.priceTo, commissionPct: p.commissionPct, status: p.status, featured: p.featured, image: await imageUrl(p.imageKey), leadCount: p._count.leads, createdAt: p.createdAt }))),
     counts,
     developers: developers.map((d) => ({ id: d.id, name: d.companyName || d.fullName })),
   }
+}
+
+// admin toggles a project's featured flag (max 6 featured in the marketplace rail)
+export async function setProjectFeatured(adminId, id, featured) {
+  const p = await prisma.project.findUnique({ where: { id } })
+  if (!p) throw new ApiError(404, 'Project not found', 'NOT_FOUND')
+  if (featured) {
+    const cnt = await prisma.project.count({ where: { featured: true } })
+    if (!p.featured && cnt >= 6) throw new ApiError(400, 'You can feature up to 6 projects. Unfeature one first.', 'FEATURED_LIMIT')
+  }
+  await prisma.project.update({ where: { id }, data: { featured: !!featured } })
+  await prisma.auditLog.create({ data: { actorId: adminId, action: 'admin.set_featured', entity: 'Project', entityId: id, meta: { featured: !!featured } } })
+  return { id, featured: !!featured }
 }
 
 export async function getProjectDetail(id) {
@@ -358,6 +403,18 @@ export async function listLeads({ status } = {}) {
   return rows.map((l) => ({ id: l.id, projectName: l.projectName, developerName: l.developerName, realtorName: l.realtorName, unit: l.unit, clientName: l.clientName, clientPhone: l.clientPhone, status: l.status, createdAt: l.createdAt }))
 }
 
+export async function getLeadDetail(id) {
+  const l = await prisma.lead.findUnique({ where: { id }, include: { commission: true, project: { select: { imageKey: true } } } })
+  if (!l) throw new ApiError(404, 'Lead not found', 'NOT_FOUND')
+  return {
+    id: l.id, projectName: l.projectName, developerName: l.developerName, realtorName: l.realtorName,
+    unit: l.unit, clientName: l.clientName, clientPhone: l.clientPhone, clientEmail: l.clientEmail, budget: l.budget,
+    status: l.status, statusHistory: l.statusHistory || null, notes: l.notes, createdAt: l.createdAt, updatedAt: l.updatedAt,
+    projectImage: l.project?.imageKey ? await imageUrl(l.project.imageKey) : null,
+    commission: l.commission ? { id: l.commission.id, status: l.commission.status, gross: l.commission.gross, net: l.commission.net, platformPct: l.commission.platformPct, dealRef: l.commission.dealRef } : null,
+  }
+}
+
 // ---- commissions (all) ----
 export async function listCommissions({ status } = {}) {
   const where = {}
@@ -372,9 +429,68 @@ export async function listCommissions({ status } = {}) {
 }
 
 export async function getCommissionDetail(id) {
-  const c = await prisma.commission.findUnique({ where: { id }, include: { realtor: { select: { fullName: true, email: true, bankName: true, iban: true } } } })
+  const c = await prisma.commission.findUnique({ where: { id }, include: { realtor: { select: { fullName: true, email: true, bankName: true, iban: true } }, lead: true } })
   if (!c) throw new ApiError(404, 'Commission not found', 'NOT_FOUND')
-  return { id: c.id, dealRef: c.dealRef, projectName: c.projectName, developerName: c.developerName, realtorName: c.realtorName, realtorEmail: c.realtor?.email, realtorBank: c.realtor?.bankName, realtorIban: c.realtor?.iban, unit: c.unit, gross: c.gross, net: c.net, platformPct: c.platformPct, platformFee: c.gross - c.net, status: c.status, failureReason: c.failureReason, closedAt: c.closedAt, createdAt: c.createdAt }
+  const proj = c.projectId ? await prisma.project.findUnique({ where: { id: c.projectId }, select: { imageKey: true } }) : null
+  return {
+    id: c.id, dealRef: c.dealRef, projectName: c.projectName, developerName: c.developerName, realtorName: c.realtorName,
+    realtorEmail: c.realtor?.email, realtorBank: c.realtor?.bankName, realtorIban: c.realtor?.iban,
+    unit: c.unit, gross: c.gross, net: c.net, platformPct: c.platformPct, platformFee: c.gross - c.net,
+    status: c.status, failureReason: c.failureReason, closedAt: c.closedAt, createdAt: c.createdAt,
+    leadId: c.leadId, clientName: c.lead?.clientName || null, clientPhone: c.lead?.clientPhone || null,
+    salePrice: c.gross ? Math.round(c.gross / 0.03) : null, leadSubmittedAt: c.lead?.createdAt || null,
+    projectImage: proj?.imageKey ? await imageUrl(proj.imageKey) : null,
+  }
+}
+
+// admin disburses a paid-by-developer commission to the realtor's bank → PAID
+export async function disburseCommission(id, adminId) {
+  const c = await prisma.commission.findUnique({ where: { id }, include: { realtor: { select: { email: true, fullName: true } } } })
+  if (!c) throw new ApiError(404, 'Commission not found', 'NOT_FOUND')
+  if (c.status !== 'PROCESSING') throw new ApiError(400, 'Only developer-paid (processing) commissions can be disbursed', 'BAD_STATE')
+  await prisma.commission.update({ where: { id }, data: { status: 'PAID' } })
+  await prisma.notification.create({ data: { userId: c.realtorId, type: 'commission', title: 'Commission disbursed', body: `${c.dealRef}: SAR ${c.net.toLocaleString()} has been sent to your bank account.`, link: '/realtor/commissions', read: false } })
+  await prisma.auditLog.create({ data: { actorId: adminId, action: 'admin.disburse_commission', entity: 'Commission', entityId: id } })
+  sendCommissionDisbursedEmail(c.realtor?.email, { fullName: c.realtor?.fullName, dealRef: c.dealRef, net: c.net }).catch((e) => logger.warn({ err: e?.message }, 'disburse email failed'))
+  return getCommissionDetail(id)
+}
+
+// ---- withdrawals (admin) ------------------------------------------------------
+export async function listWithdrawals({ status } = {}) {
+  const where = {}
+  if (status) where.status = status
+  const rows = await prisma.withdrawal.findMany({ where, orderBy: { createdAt: 'desc' }, take: 300, include: { realtor: { select: { fullName: true, email: true, bankName: true, iban: true } } } })
+  const all = await prisma.withdrawal.findMany({ select: { status: true, amount: true } })
+  return {
+    withdrawals: rows.map((w) => ({ id: w.id, reference: w.reference, amount: w.amount, method: w.method, status: w.status, note: w.note, paidAt: w.paidAt, createdAt: w.createdAt, realtorName: w.realtor?.fullName, realtorEmail: w.realtor?.email, realtorBank: w.realtor?.bankName, realtorIban: w.realtor?.iban })),
+    counts: { all: all.length, requested: all.filter((w) => w.status === 'REQUESTED').length, processing: all.filter((w) => w.status === 'PROCESSING').length, paid: all.filter((w) => w.status === 'PAID').length },
+    pendingTotal: all.filter((w) => w.status === 'REQUESTED' || w.status === 'PROCESSING').reduce((s, w) => s + w.amount, 0),
+  }
+}
+
+// admin marks a withdrawal paid → settles it and moves the realtor's developer-paid
+// commissions to PAID (they were the source of the available balance)
+export async function markWithdrawalPaid(id, adminId) {
+  const w = await prisma.withdrawal.findUnique({ where: { id }, include: { realtor: { select: { email: true, fullName: true } } } })
+  if (!w) throw new ApiError(404, 'Withdrawal not found', 'NOT_FOUND')
+  if (w.status === 'PAID') throw new ApiError(400, 'This withdrawal is already paid', 'ALREADY_PAID')
+  await prisma.$transaction([
+    prisma.withdrawal.update({ where: { id }, data: { status: 'PAID', paidAt: new Date() } }),
+    prisma.commission.updateMany({ where: { realtorId: w.realtorId, status: 'PROCESSING' }, data: { status: 'PAID' } }),
+  ])
+  await prisma.notification.create({ data: { userId: w.realtorId, type: 'commission', title: 'Withdrawal paid', body: `Your withdrawal ${w.reference} of SAR ${w.amount.toLocaleString()} has been paid to your bank.`, link: '/realtor/commissions', read: false } })
+  await prisma.auditLog.create({ data: { actorId: adminId, action: 'admin.withdrawal_paid', entity: 'Withdrawal', entityId: id } })
+  sendCommissionDisbursedEmail(w.realtor?.email, { fullName: w.realtor?.fullName, dealRef: w.reference, net: w.amount }).catch((e) => logger.warn({ err: e?.message }, 'withdrawal paid email failed'))
+  return { id, status: 'PAID' }
+}
+
+export async function rejectWithdrawal(id, adminId, reason) {
+  const w = await prisma.withdrawal.findUnique({ where: { id } })
+  if (!w) throw new ApiError(404, 'Withdrawal not found', 'NOT_FOUND')
+  await prisma.withdrawal.update({ where: { id }, data: { status: 'REJECTED', note: reason || null } })
+  await prisma.notification.create({ data: { userId: w.realtorId, type: 'commission', title: 'Withdrawal rejected', body: `Your withdrawal ${w.reference} was not processed${reason ? `: ${reason}` : ''}. The funds remain available in your wallet.`, link: '/realtor/commissions', read: false } })
+  await prisma.auditLog.create({ data: { actorId: adminId, action: 'admin.withdrawal_rejected', entity: 'Withdrawal', entityId: id, meta: reason ? { reason } : undefined } })
+  return { id, status: 'REJECTED' }
 }
 
 // ---- disputes ----
@@ -412,14 +528,19 @@ export async function listAnnouncements() {
   return rows.map((a) => ({ id: a.id, title: a.title, body: a.body, audience: a.audience, recipients: a.recipients, createdAt: a.createdAt }))
 }
 
-export async function createAnnouncement(adminId, { title, body, audience }) {
+export async function createAnnouncement(adminId, { title, body, audience, link }) {
   if (!title?.trim() || !body?.trim()) throw new ApiError(400, 'Title and body are required', 'BAD_INPUT')
   const aud = ['ALL', 'REALTORS', 'DEVELOPERS'].includes(audience) ? audience : 'ALL'
   const roleFilter = aud === 'REALTORS' ? { role: 'REALTOR' } : aud === 'DEVELOPERS' ? { role: 'DEVELOPER' } : { role: { in: ['REALTOR', 'DEVELOPER'] } }
-  const recipients = await prisma.user.findMany({ where: { ...roleFilter, status: 'ACTIVE' }, select: { id: true } })
+  const recipients = await prisma.user.findMany({ where: { ...roleFilter, status: 'ACTIVE' }, select: { id: true, email: true, fullName: true } })
   const ann = await prisma.announcement.create({ data: { title: title.trim(), body: body.trim(), audience: aud, sentById: adminId, recipients: recipients.length } })
   if (recipients.length) {
-    await prisma.notification.createMany({ data: recipients.map((u) => ({ userId: u.id, type: 'announcement', title: title.trim(), body: body.trim(), link: '#', read: false })) })
+    // in-app (browser) notifications
+    await prisma.notification.createMany({ data: recipients.map((u) => ({ userId: u.id, type: 'announcement', title: title.trim(), body: body.trim(), link: link?.trim() || '#', read: false })) })
+    // emails (best-effort, don't fail the send if SMTP hiccups)
+    Promise.allSettled(recipients.map((u) => sendAnnouncementEmail(u.email, { fullName: u.fullName, title: title.trim(), body: body.trim(), link: link?.trim() || null })))
+      .then((res) => logger.info({ sent: res.filter((r) => r.status === 'fulfilled').length, total: recipients.length }, '📣 announcement emails dispatched'))
+      .catch(() => {})
   }
   await prisma.auditLog.create({ data: { actorId: adminId, action: 'admin.create_announcement', entity: 'Announcement', entityId: ann.id } })
   return { id: ann.id, recipients: ann.recipients }

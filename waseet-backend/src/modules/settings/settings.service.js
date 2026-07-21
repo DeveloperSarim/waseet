@@ -19,11 +19,11 @@ export async function getSettings() {
   return { settings, dbRegions: DB_REGIONS }
 }
 
-const SECTION_KEYS = ['commission', 'emails', 'security', 'platform', 'maintenance']
+const SECTION_KEYS = ['commission', 'emails', 'security', 'platform', 'maintenance', 'marketplaceMaintenance']
 export async function updateSection(section, patch) {
   if (!SECTION_KEYS.includes(section)) throw new ApiError(400, 'Unknown settings section', 'BAD_SECTION')
-  if (section === 'maintenance') {
-    const cur = await getSection('maintenance')
+  if (section === 'maintenance' || section === 'marketplaceMaintenance') {
+    const cur = await getSection(section)
     // stamp the start time when maintenance is switched ON; clear it when OFF
     if (patch.enabled === true && !cur.enabled) patch.startedAt = patch.startedAt || new Date().toISOString()
     if (patch.enabled === false) patch.startedAt = null
