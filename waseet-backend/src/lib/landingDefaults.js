@@ -287,6 +287,18 @@ export const LANDING_DEFAULTS = {
     copyrightRight: 'جميع الحقوق محفوظة · Riyadh, Saudi Arabia',
   },
 
+  // Marketplace "Browse by city" cards — name + image editable; project count is live.
+  marketplace: {
+    cities: [
+      { name: 'Jeddah', image: { key: '', alt: '' } },
+      { name: 'Riyadh', image: { key: '', alt: '' } },
+      { name: 'Dammam', image: { key: '', alt: '' } },
+      { name: 'Mecca', image: { key: '', alt: '' } },
+      { name: 'Medina', image: { key: '', alt: '' } },
+      { name: 'Khobar', image: { key: '', alt: '' } },
+    ],
+  },
+
   custom: { css: '', headHtml: '', bodyHtml: '', js: '' },
 }
 

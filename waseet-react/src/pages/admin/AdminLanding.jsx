@@ -162,6 +162,15 @@ const FOOTER_FIELDS = [
   { k: 'copyrightLeft', label: 'Copyright — left' },
   { k: 'copyrightRight', label: 'Copyright — right' },
 ]
+// Marketplace "Browse by city" cards — edited under the "Marketplace" tab.
+const MARKETPLACE_FIELDS = [
+  {
+    k: 'cities', t: 'list', label: 'Browse-by-city cards', itemFields: [
+      { k: 'image', t: 'image', label: 'City image' },
+      { k: 'name', label: 'City name (also used as the filter when clicked)' },
+    ],
+  },
+]
 
 /* ---------- immutable path helpers ---------- */
 function setPath(obj, path, value) {
@@ -198,7 +207,7 @@ function AssetPicker({ url, onFile, uploading, onRemove, square }) {
       <div style={{ width: square ? 48 : 96, height: 48, borderRadius: 8, border: `1px solid ${colors.border}`, background: colors.surfaceMuted, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
         {url ? <img src={url} alt="" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} /> : <span style={{ fontSize: 10, color: colors.textFaint }}>none</span>}
       </div>
-      <input ref={ref} type="file" accept="image/*,.ico" style={{ display: 'none' }} onChange={(e) => { const f = e.target.files?.[0]; if (f) onFile(f); e.target.value = '' }} />
+      <input ref={ref} type="file" accept="image/*,.ico,.avif" style={{ display: 'none' }} onChange={(e) => { const f = e.target.files?.[0]; if (f) onFile(f); e.target.value = '' }} />
       <button onClick={() => ref.current?.click()} disabled={uploading} style={{ ...chip(false), opacity: uploading ? 0.6 : 1 }}>{uploading ? 'Uploading…' : url ? 'Replace' : 'Upload'}</button>
       {url && <span onClick={onRemove} style={removeBtn}>× Remove</span>}
     </div>
@@ -265,6 +274,7 @@ export default function AdminLanding() {
       if (out.sections?.liveProjects) delete out.sections.liveProjects.items
       if (out.navbar?.logoImage) delete out.navbar.logoImage.url
       if (out.footer?.logoImage) delete out.footer.logoImage.url
+      if (Array.isArray(out.marketplace?.cities)) out.marketplace.cities.forEach((c) => { if (c.image) delete c.image.url })
       await settingsApi.saveLanding(out)
       setDirty(false)
       showToast('Landing page saved — changes are live')
@@ -385,7 +395,7 @@ export default function AdminLanding() {
         <div style={{ maxWidth: 900 }}>
         {/* tabs */}
         <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
-          {[['sections', 'Sections'], ['header', 'Header & Footer'], ['seo', 'SEO & Social'], ['custom', 'Custom Code']].map(([id, lbl]) => (
+          {[['sections', 'Sections'], ['header', 'Header & Footer'], ['marketplace', 'Marketplace'], ['seo', 'SEO & Social'], ['custom', 'Custom Code']].map(([id, lbl]) => (
             <div key={id} style={chip(tab === id)} onClick={() => setTab(id)}>{lbl}</div>
           ))}
         </div>
@@ -433,6 +443,15 @@ export default function AdminLanding() {
               <div style={{ fontSize: 13, fontWeight: 700 }}>Footer</div>
               {FOOTER_FIELDS.map((f) => renderField(['footer'], f))}
             </div>
+          </div>
+        )}
+
+        {/* ------------- MARKETPLACE ------------- */}
+        {tab === 'marketplace' && (
+          <div style={{ border: `1px solid ${colors.border}`, borderRadius: 12, background: '#fff', padding: 18, display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div style={{ fontSize: 13, fontWeight: 700 }}>Marketplace — “Browse by city”</div>
+            <div style={{ fontSize: 12, color: colors.textSoft, background: colors.blueTint, border: `1px solid ${colors.blueTintBorder}`, borderRadius: 8, padding: '9px 11px' }}>These cards show in the marketplace “Browse by city” row. Edit each city’s name + image; the project count is live from real data. The name is also the filter applied when a card is clicked (keep it matching your project cities).</div>
+            {MARKETPLACE_FIELDS.map((f) => renderField(['marketplace'], f))}
           </div>
         )}
 

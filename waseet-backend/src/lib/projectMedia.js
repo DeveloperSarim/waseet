@@ -69,8 +69,8 @@ export async function resolveProjectMedia(p) {
 // developer and admin routes. `owner` is only used to namespace the object key.
 export async function uploadProjectMedia(owner, file) {
   if (!file) throw new ApiError(400, 'No file provided', 'NO_FILE')
-  const ok = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf']
-  if (!ok.includes(file.mimetype)) throw new ApiError(415, 'Only JPG, PNG, WEBP or PDF files', 'BAD_TYPE')
+  const ok = ['image/jpeg', 'image/png', 'image/webp', 'image/avif', 'application/pdf']
+  if (!ok.includes(file.mimetype)) throw new ApiError(415, 'Only JPG, PNG, WEBP, AVIF or PDF files', 'BAD_TYPE')
   const key = `projects/${owner}/${crypto.randomUUID()}`
   await s3.send(new PutObjectCommand({ Bucket: buckets.public, Key: key, Body: file.buffer, ContentType: file.mimetype }))
   return { key, imageKey: key, url: await imageUrl(key), filename: file.originalname, mimeType: file.mimetype, size: file.size }
@@ -80,8 +80,8 @@ export async function uploadProjectMedia(owner, file) {
 // to the public bucket under the `landing/` namespace. Allows icon formats too.
 export async function uploadLandingAsset(file) {
   if (!file) throw new ApiError(400, 'No file provided', 'NO_FILE')
-  const ok = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/svg+xml', 'image/x-icon', 'image/vnd.microsoft.icon']
-  if (!ok.includes(file.mimetype)) throw new ApiError(415, 'Only JPG, PNG, WEBP, GIF, SVG or ICO images', 'BAD_TYPE')
+  const ok = ['image/jpeg', 'image/png', 'image/webp', 'image/avif', 'image/gif', 'image/svg+xml', 'image/x-icon', 'image/vnd.microsoft.icon']
+  if (!ok.includes(file.mimetype)) throw new ApiError(415, 'Only JPG, PNG, WEBP, AVIF, GIF, SVG or ICO images', 'BAD_TYPE')
   const key = `landing/${crypto.randomUUID()}`
   await s3.send(new PutObjectCommand({ Bucket: buckets.public, Key: key, Body: file.buffer, ContentType: file.mimetype }))
   return { key, url: await imageUrl(key), filename: file.originalname, mimeType: file.mimetype, size: file.size }
@@ -90,8 +90,8 @@ export async function uploadLandingAsset(file) {
 // Upload a profile photo / company logo (image only) to the public bucket.
 export async function uploadAvatar(owner, file) {
   if (!file) throw new ApiError(400, 'No file provided', 'NO_FILE')
-  const ok = ['image/jpeg', 'image/png', 'image/webp']
-  if (!ok.includes(file.mimetype)) throw new ApiError(415, 'Only JPG, PNG or WEBP images', 'BAD_TYPE')
+  const ok = ['image/jpeg', 'image/png', 'image/webp', 'image/avif']
+  if (!ok.includes(file.mimetype)) throw new ApiError(415, 'Only JPG, PNG, WEBP or AVIF images', 'BAD_TYPE')
   const key = `avatars/${owner}/${crypto.randomUUID()}`
   await s3.send(new PutObjectCommand({ Bucket: buckets.public, Key: key, Body: file.buffer, ContentType: file.mimetype }))
   return { key, url: await imageUrl(key) }

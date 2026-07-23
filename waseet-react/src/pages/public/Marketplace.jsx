@@ -6,7 +6,7 @@ import { useHover } from '../../hooks/useHover'
 import { MapView } from '../../components/MapView'
 import { MapMultiView } from '../../components/MapMultiView'
 import { cityImage } from '../../lib/cityImages'
-import { realtorApi, geoApi } from '../../lib/api'
+import { realtorApi, geoApi, landingApi } from '../../lib/api'
 import { countryName } from '../../lib/adminFormat'
 
 function Segmented({ options, value, onChange, height = 36, fontSize = 13 }) {
@@ -557,6 +557,14 @@ export default function Marketplace() {
     return () => { active = false }
   }, [])
 
+  // Admin-managed "Browse by city" cards (names + images) from the landing CMS.
+  const [mktCities, setMktCities] = useState(null)
+  useEffect(() => {
+    let active = true
+    landingApi.get().then((c) => { if (active) setMktCities(c?.marketplace?.cities || null) }).catch(() => {})
+    return () => { active = false }
+  }, [])
+
   const toggleSave = (p) => {
     const next = !p.saved
     setItems((list) => list.map((x) => (x.id === p.id ? { ...x, saved: next } : x)))
@@ -598,14 +606,19 @@ export default function Marketplace() {
   )
   const exclusiveProjects = [...items].sort((a, b) => (b.commissionPct || 0) - (a.commissionPct || 0)).slice(0, 4)
   const decoCards = items.slice(0, 2) // fanned cards in the dark band
-  const cityEntries = stats?.cityCounts
+  const realCityEntries = stats?.cityCounts
     ? Object.entries(stats.cityCounts).filter(([, n]) => n > 0).sort((a, b) => b[1] - a[1])
     : []
-  // Handpicked ties to the busiest city so the "Handpicked in {city}" header is honest.
-  const topCity = cityEntries[0]?.[0] || null
+  const coverForCity = (cityName) => items.find((p) => p.city === cityName && p.image)?.image || null
+  // Browse-by-city cards: admin-managed list (name + image) when set, else derived from real data.
+  const adminCities = Array.isArray(mktCities) ? mktCities.filter((c) => c && c.name) : []
+  const cityCards = adminCities.length
+    ? adminCities.map((c) => ({ name: c.name, count: stats?.cityCounts?.[c.name] || 0, img: c.image?.url || null }))
+    : realCityEntries.map(([name, count]) => ({ name, count, img: null }))
+  // Handpicked ties to the busiest REAL city so the "Handpicked in {city}" header is honest.
+  const topCity = realCityEntries[0]?.[0] || null
   const handpickedProjects = (topCity ? items.filter((p) => p.city === topCity) : items).slice(0, 4)
   const handpickedLabel = topCity ? `Handpicked in ${topCity}` : 'Handpicked for you'
-  const coverForCity = (cityName) => items.find((p) => p.city === cityName && p.image)?.image || null
   const typeCount = (name) => items.filter((p) => p.type && p.type.toLowerCase().includes(name.toLowerCase().replace(/s$/, ''))).length
   // Jump to results with a filter applied (used by city / type cards + hero pills).
   const goToResults = () => resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
@@ -874,21 +887,21 @@ export default function Marketplace() {
         </div>
       )}
 
-      {/* BROWSE BY CITY — real cities with real project cover images */}
-      {cityEntries.length > 0 && (
+      {/* BROWSE BY CITY — admin-managed cards (name + image), else real cities */}
+      {cityCards.length > 0 && (
         <div style={{ background: '#fff', borderTop: `1px solid ${colors.border}`, padding: '40px 24px' }}>
           <div style={{ maxWidth: 1120, margin: '0 auto' }}>
             <h2 style={{ fontSize: 20, fontWeight: 700, letterSpacing: '-0.02em', margin: '0 0 18px' }}>Browse by city</h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12 }}>
-              {cityEntries.map(([name, count]) => {
-                const photo = cityImage(name) || coverForCity(name)
+              {cityCards.map(({ name, count, img }) => {
+                const photo = img || cityImage(name) || coverForCity(name)
                 return (
                   <div key={name} onClick={() => goSearch({ city: name })} style={{ borderRadius: 12, overflow: 'hidden', cursor: 'pointer', position: 'relative', height: 130, background: coverFallback }}>
                     {photo && <img src={photo} alt={name} loading="lazy" onError={(e) => { e.currentTarget.style.display = 'none' }} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />}
                     <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(0,0,0,0.05) 35%, rgba(0,0,0,0.78) 100%)' }} />
                     <div style={{ position: 'absolute', bottom: 11, left: 12 }}>
                       <div style={{ fontSize: 16, fontWeight: 700, color: '#fff', letterSpacing: '-0.01em' }}>{name}</div>
-                      <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', marginTop: 1 }}>{count} project{count > 1 ? 's' : ''}</div>
+                      {count > 0 && <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', marginTop: 1 }}>{count} project{count > 1 ? 's' : ''}</div>}
                     </div>
                   </div>
                 )

@@ -69,6 +69,12 @@ export async function getLandingConfig({ origin = '' } = {}) {
   // resolve navbar / footer logo images
   if (cfg.navbar) cfg.navbar.logoImage = await resolveImg(cfg.navbar.logoImage)
   if (cfg.footer) cfg.footer.logoImage = await resolveImg(cfg.footer.logoImage)
+  // resolve marketplace browse-by-city images
+  if (Array.isArray(cfg.marketplace?.cities)) {
+    cfg.marketplace.cities = await Promise.all(
+      cfg.marketplace.cities.map(async (c) => ({ ...c, image: await resolveImg(c.image) })),
+    )
+  }
 
   // populate live/featured project cards from real featured projects
   if (cfg.sections?.liveProjects) {
