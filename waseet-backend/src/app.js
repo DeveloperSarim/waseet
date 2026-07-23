@@ -13,6 +13,7 @@ import { adminRouter } from './modules/admin/admin.routes.js'
 import { realtorRouter } from './modules/realtor/realtor.routes.js'
 import { developerRouter } from './modules/developer/developer.routes.js'
 import { settingsRouter } from './modules/settings/settings.routes.js'
+import { landingRouter } from './modules/landing/landing.routes.js'
 import { geoRouter } from './modules/geo/geo.routes.js'
 import { maintenanceGuard, apiCounter } from './middleware/maintenance.js'
 import { requireAuth } from './middleware/auth.js'
@@ -66,6 +67,8 @@ export function createApp() {
     }
   })
   app.use('/api/v1/auth', authRouter)
+  // public landing-page content + SEO prerender (no auth) — powers the homepage
+  app.use('/api/v1/landing', landingRouter)
   // public Saudi geography reference data (city/area dropdowns)
   app.use('/api/v1/geo', geoRouter)
   app.use('/api/v1/documents', documentsRouter)

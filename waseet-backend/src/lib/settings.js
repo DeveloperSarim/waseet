@@ -1,5 +1,6 @@
 import { prisma } from './prisma.js'
 import { config } from '../config/env.js'
+import { LANDING_DEFAULTS } from './landingDefaults.js'
 
 // Default values for each settings section. Stored per-key in the `settings` table;
 // getSection merges the stored value over these defaults so new keys appear safely.
@@ -53,6 +54,9 @@ export const SETTINGS_DEFAULTS = {
       { label: 'Final testing and verification', status: 'pending' },
     ],
   },
+  // Public landing-page (homepage) content, SEO meta, and custom code — managed from
+  // the admin "Landing Page" screen. Big default lives in landingDefaults.js.
+  landing: LANDING_DEFAULTS,
 }
 
 export const DB_REGIONS = [

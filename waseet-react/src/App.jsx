@@ -62,6 +62,7 @@ import AdminProjects from './pages/admin/AdminProjects'
 import AdminDisputes from './pages/admin/AdminDisputes'
 import AdminDisputeDetail from './pages/admin/AdminDisputeDetail'
 import AdminSettings from './pages/admin/AdminSettings'
+import AdminLanding from './pages/admin/AdminLanding'
 import AdminAnnouncements from './pages/admin/AdminAnnouncements'
 import AdminLeads from './pages/admin/AdminLeads'
 import AdminLeadDetail from './pages/admin/AdminLeadDetail'
@@ -169,6 +170,7 @@ export default function App() {
         <Route path="/admin/disputes" element={<AdminDisputes />} />
         <Route path="/admin/disputes/:id" element={<AdminDisputeDetail />} />
         <Route path="/admin/announcements" element={<AdminAnnouncements />} />
+        <Route path="/admin/landing" element={<AdminLanding />} />
         <Route path="/admin/settings" element={<AdminSettings />} />
         <Route path="/admin/email-templates" element={<AdminEmailTemplates />} />
         <Route path="/admin/data-export" element={<AdminDataExport />} />

@@ -76,6 +76,17 @@ export async function uploadProjectMedia(owner, file) {
   return { key, imageKey: key, url: await imageUrl(key), filename: file.originalname, mimeType: file.mimetype, size: file.size }
 }
 
+// Upload a landing-page asset (favicon / app icon / social banner / section image)
+// to the public bucket under the `landing/` namespace. Allows icon formats too.
+export async function uploadLandingAsset(file) {
+  if (!file) throw new ApiError(400, 'No file provided', 'NO_FILE')
+  const ok = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/svg+xml', 'image/x-icon', 'image/vnd.microsoft.icon']
+  if (!ok.includes(file.mimetype)) throw new ApiError(415, 'Only JPG, PNG, WEBP, GIF, SVG or ICO images', 'BAD_TYPE')
+  const key = `landing/${crypto.randomUUID()}`
+  await s3.send(new PutObjectCommand({ Bucket: buckets.public, Key: key, Body: file.buffer, ContentType: file.mimetype }))
+  return { key, url: await imageUrl(key), filename: file.originalname, mimeType: file.mimetype, size: file.size }
+}
+
 // Upload a profile photo / company logo (image only) to the public bucket.
 export async function uploadAvatar(owner, file) {
   if (!file) throw new ApiError(400, 'No file provided', 'NO_FILE')

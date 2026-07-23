@@ -19,7 +19,7 @@ export async function getSettings() {
   return { settings, dbRegions: DB_REGIONS }
 }
 
-const SECTION_KEYS = ['commission', 'emails', 'security', 'platform', 'maintenance', 'marketplaceMaintenance']
+const SECTION_KEYS = ['commission', 'emails', 'security', 'platform', 'maintenance', 'marketplaceMaintenance', 'landing']
 export async function updateSection(section, patch) {
   if (!SECTION_KEYS.includes(section)) throw new ApiError(400, 'Unknown settings section', 'BAD_SECTION')
   if (section === 'maintenance' || section === 'marketplaceMaintenance') {

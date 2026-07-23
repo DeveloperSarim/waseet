@@ -28,6 +28,7 @@ const D = {
   export: 'M12 3v12M7 10l5 5 5-5M5 21h14',
   store: 'M3 9l1.5-5h15L21 9M4 9h16v10a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V9zM3 9h18M9 13h6',
   bank: 'M3 21h18M3 10h18M5 6l7-3 7 3M4 10v11M20 10v11M8 14v3M12 14v3M16 14v3',
+  layout: 'M3 3h18v18H3zM3 9h18M9 21V9',
 }
 
 export const navConfig = {
@@ -116,6 +117,7 @@ export const navConfig = {
       {
         label: 'Platform',
         items: [
+          { label: 'Landing Page', to: '/admin/landing', d: D.layout },
           { label: 'Announcements', to: '/admin/announcements', d: D.megaphone },
           { label: 'Settings', to: '/admin/settings', d: D.adminGear },
           { label: 'Email Templates', to: '/admin/email-templates', d: D.mail },

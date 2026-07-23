@@ -10,7 +10,7 @@ import { ApiError } from '../../middleware/error.js'
 import { sendApprovalEmail, sendRejectionEmail, sendMail, sendCommissionDisbursedEmail, sendAnnouncementEmail } from '../../lib/mailer.js'
 import { logger } from '../../utils/logger.js'
 import { getSection, setSection } from '../../lib/settings.js'
-import { resolveProjectMedia, uploadProjectMedia, uploadAvatar, imageUrl } from '../../lib/projectMedia.js'
+import { resolveProjectMedia, uploadProjectMedia, uploadAvatar, uploadLandingAsset, imageUrl } from '../../lib/projectMedia.js'
 import { projectFields } from '../developer/developer.service.js'
 
 const publicUser = (u) => ({
@@ -379,6 +379,11 @@ export async function updateProject(adminId, id, data) {
 // Admin project-media upload (image / floor plan / document) → public bucket.
 export async function uploadProjectFile(adminId, file) {
   return uploadProjectMedia(`admin-${adminId}`, file)
+}
+
+// Landing-page asset upload (favicon / app icon / social banner / section image).
+export async function uploadLandingFile(adminId, file) {
+  return uploadLandingAsset(file)
 }
 
 export async function setProjectStatus(adminId, id, status) {

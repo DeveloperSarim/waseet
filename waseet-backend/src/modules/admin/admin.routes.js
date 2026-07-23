@@ -87,6 +87,8 @@ adminRouter.get('/dashboard', H((req) => svc.adminDashboard()))
 
 adminRouter.get('/projects', H((req) => svc.listProjects(req.query)))
 adminRouter.post('/projects/image', upload.single('file'), H((req) => svc.uploadProjectFile(req.user.id, req.file)))
+// landing-page asset upload (favicon / app icon / social banner / section image) → { key, url }
+adminRouter.post('/landing/asset', upload.single('file'), H((req) => svc.uploadLandingFile(req.user.id, req.file)))
 adminRouter.get('/projects/:id', H((req) => svc.getProjectDetail(req.params.id).then((project) => ({ project }))))
 adminRouter.patch('/projects/:id', H((req) => svc.updateProject(req.user.id, req.params.id, req.body || {}).then((project) => ({ project }))))
 adminRouter.post('/projects/:id/status', H((req) => svc.setProjectStatus(req.user.id, req.params.id, req.body?.status).then((r) => ({ result: r }))))

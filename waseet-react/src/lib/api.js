@@ -203,6 +203,23 @@ export const settingsApi = {
   deleteBackup: (id) => request(`/admin/settings/backups/${id}`, { method: 'DELETE', auth: true }),
   backupDownloadUrl: (id) => `${API_URL}/admin/settings/backups/${id}/download`,
   exportUrl: () => `${API_URL}/admin/settings/export`,
+  // landing-page CMS: save the whole `landing` section, upload favicon/app-icon/banner/section images
+  saveLanding: (patch) => request('/admin/settings/landing', { method: 'PATCH', auth: true, body: patch }).then((d) => d.value),
+  uploadLandingAsset: async (file) => {
+    const fd = new FormData()
+    fd.append('file', file)
+    const headers = {}
+    if (accessToken) headers.Authorization = `Bearer ${accessToken}`
+    const res = await fetch(`${API_URL}/admin/landing/asset`, { method: 'POST', headers, credentials: 'include', body: fd })
+    const data = await res.json().catch(() => null)
+    if (!res.ok) throw new Error(data?.error?.message || 'Upload failed')
+    return data // { key, url, ... }
+  },
+}
+
+// Public landing-page content + SEO (no auth) — powers the homepage.
+export const landingApi = {
+  get: () => request('/landing').then((d) => d.landing),
 }
 
 // Public platform status (no auth) — used to detect maintenance mode
